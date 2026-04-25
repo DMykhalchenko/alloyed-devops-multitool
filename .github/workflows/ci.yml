@@ -8,14 +8,18 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   native-build-and-smoke:
-    name: Native Build and Smoke (${{ matrix.os }})
+    name: gha/native-build-and-smoke (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-slim, windows-latest]
 
     env:
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
@@ -24,10 +28,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Setup .NET from global.json
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
         with:
           global-json-file: global.json
 
@@ -52,12 +56,12 @@ jobs:
         run: pwsh -NoProfile -File tests/powershell/Smoke.Module.Tests.ps1
 
   container-smoke:
-    name: Container Smoke (Ubuntu)
-    runs-on: ubuntu-latest
+    name: gha/container-smoke
+    runs-on: ubuntu-slim
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Build container image via compose
         run: docker compose -f compose.yaml build

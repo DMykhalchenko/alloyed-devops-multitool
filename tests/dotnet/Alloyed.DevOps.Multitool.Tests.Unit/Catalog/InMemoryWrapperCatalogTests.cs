@@ -17,4 +17,18 @@ public class InMemoryWrapperCatalogTests
         result.MissingCommands.Should().ContainSingle().Which.Should().Be("Unknown-Command");
         result.RequiredModules.Should().Contain("Alloyed.DevOps.Multitool");
     }
+
+    [Fact]
+    public void Resolve_Should_MapKnownAliases_ToWrappers()
+    {
+        var catalog = new InMemoryWrapperCatalog();
+
+        var result = catalog.Resolve(new[] { "gci", "gi", "tp" });
+
+        result.Replacements["gci"].Should().Be("Get-AlloyedChildItem");
+        result.Replacements["gi"].Should().Be("Get-AlloyedItem");
+        result.Replacements["tp"].Should().Be("Test-AlloyedPath");
+        result.MissingCommands.Should().BeEmpty();
+        result.RequiredModules.Should().Contain("Alloyed.DevOps.Multitool");
+    }
 }

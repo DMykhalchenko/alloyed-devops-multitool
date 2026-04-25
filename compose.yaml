@@ -2,9 +2,9 @@ services:
   build:
     image: alloyed-devops-multitool:dev
     build:
-      context: ../..
-      dockerfile: projects/alloyed-devops-multitool/Containerfile
+      context: .
+      dockerfile: Containerfile
       args:
         DOTNET_VERSION: "10.0"
-    working_dir: /workspace/projects/alloyed-devops-multitool
+    working_dir: /workspace
     command: ["dotnet", "build", "Alloyed.DevOps.Multitool.slnx", "-c", "Release", "--no-restore"]

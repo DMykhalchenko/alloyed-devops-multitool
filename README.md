@@ -34,6 +34,10 @@
   - `Get-ChildItem -> Get-AlloyedChildItem`
   - `Get-Item -> Get-AlloyedItem`
   - `Test-Path -> Test-AlloyedPath`
+- Added compatibility aliases for migration scenarios:
+  - `gci -> Get-AlloyedChildItem`
+  - `gi -> Get-AlloyedItem`
+  - `tp -> Test-AlloyedPath`
 
 ## Iteration 3 Progress
 - Added transform and builder contracts:
@@ -103,7 +107,7 @@
 Build from repository root:
 
 ```powershell
-docker build -f projects/alloyed-devops-multitool/Containerfile -t alloyed-devops-multitool:dev .
+docker build -f Containerfile -t alloyed-devops-multitool:dev .
 ```
 
 Run build validation inside container:
@@ -116,15 +120,15 @@ docker run --rm alloyed-devops-multitool:dev
 Run containerized build with Compose:
 
 ```powershell
-docker compose -f projects/alloyed-devops-multitool/compose.yaml build
-docker compose -f projects/alloyed-devops-multitool/compose.yaml run --rm build
+docker compose -f compose.yaml build
+docker compose -f compose.yaml run --rm build
 ```
 
 ## End-to-End Smoke
 Run the full local smoke scenario:
 
 ```powershell
-pwsh -NoProfile -File projects/alloyed-devops-multitool/tests/powershell/Smoke.Module.Tests.ps1
+pwsh -NoProfile -File tests/powershell/Smoke.Module.Tests.ps1
 ```
 
 This verifies:
@@ -148,7 +152,7 @@ It runs:
 Run:
 
 ```powershell
-dotnet test projects/alloyed-devops-multitool/tests/dotnet/Alloyed.DevOps.Multitool.Tests.Unit/Alloyed.DevOps.Multitool.Tests.Unit.csproj -c Debug
+dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Unit/Alloyed.DevOps.Multitool.Tests.Unit.csproj -c Debug
 ```
 
 ## Integration test status
@@ -158,12 +162,12 @@ dotnet test projects/alloyed-devops-multitool/tests/dotnet/Alloyed.DevOps.Multit
 Run:
 
 ```powershell
-dotnet test projects/alloyed-devops-multitool/tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration/Alloyed.DevOps.Multitool.Tests.Integration.csproj -c Debug
+dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration/Alloyed.DevOps.Multitool.Tests.Integration.csproj -c Debug
 ```
 
 ## Temporary Jenkins CI (Podman Remote)
 Use template pipeline:
-- `projects/alloyed-devops-multitool/Jenkinsfile.podman-remote`
+- `Jenkinsfile.podman-remote`
 
 This pipeline builds and runs the project container on remote connection `centos10-root`.
 
@@ -175,21 +179,21 @@ Use local helper script for repeatable, fast inner-loop commands:
 
 ```powershell
 # first run (with restore)
-pwsh -NoProfile -File projects/alloyed-devops-multitool/dev.ps1 -Stage fast -Restore
+pwsh -NoProfile -File ./dev.ps1 -Stage fast -Restore
 
 # fast default loop (unit tests)
-pwsh -NoProfile -File projects/alloyed-devops-multitool/dev.ps1
+pwsh -NoProfile -File ./dev.ps1
 
 # targeted runs
-pwsh -NoProfile -File projects/alloyed-devops-multitool/dev.ps1 -Stage integration
-pwsh -NoProfile -File projects/alloyed-devops-multitool/dev.ps1 -Stage full
-pwsh -NoProfile -File projects/alloyed-devops-multitool/dev.ps1 -Stage ci
+pwsh -NoProfile -File ./dev.ps1 -Stage integration
+pwsh -NoProfile -File ./dev.ps1 -Stage full
+pwsh -NoProfile -File ./dev.ps1 -Stage ci
 
 # optional xUnit filter
-pwsh -NoProfile -File projects/alloyed-devops-multitool/dev.ps1 -Stage unit -Filter "FullyQualifiedName~TransformationPipeline"
+pwsh -NoProfile -File ./dev.ps1 -Stage unit -Filter "FullyQualifiedName~TransformationPipeline"
 ```
 
-The script configures `DOTNET_CLI_HOME` to `projects/alloyed-devops-multitool/.dotnet-cli` to avoid machine-global state and keep runs deterministic.
+The script configures `DOTNET_CLI_HOME` to `./.dotnet-cli` to avoid machine-global state and keep runs deterministic.
 
 `-Stage ci` mirrors the GitHub Actions execution order (`restore -> build -> unit -> integration -> smoke`) for local pre-push validation.
 
@@ -197,8 +201,8 @@ The script configures `DOTNET_CLI_HOME` to `projects/alloyed-devops-multitool/.d
 To initialize this project as a standalone GitHub repository:
 
 ```powershell
-# from monorepo root
-pwsh -NoProfile -File projects/alloyed-devops-multitool/bootstrap-github.ps1 `
+# from this repository root
+pwsh -NoProfile -File ./bootstrap-github.ps1 `
   -Owner <github-user-or-org> `
   -RepoName alloyed-devops-multitool `
   -CreateRemote `
@@ -206,5 +210,5 @@ pwsh -NoProfile -File projects/alloyed-devops-multitool/bootstrap-github.ps1 `
 ```
 
 What gets prepared for GitHub:
-- Standalone workflow: `projects/alloyed-devops-multitool/.github/workflows/ci.yml`
-- Copilot repository guidance: `projects/alloyed-devops-multitool/.github/copilot-instructions.md`
+- Standalone workflow: `.github/workflows/ci.yml`
+- Copilot repository guidance: `.github/copilot-instructions.md`

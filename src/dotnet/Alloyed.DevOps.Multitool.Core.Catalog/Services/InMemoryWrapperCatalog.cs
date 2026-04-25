@@ -13,6 +13,9 @@ public sealed class InMemoryWrapperCatalog : IWrapperCatalog
             ["Get-ChildItem"] = "Get-AlloyedChildItem",
             ["Get-Item"] = "Get-AlloyedItem",
             ["Test-Path"] = "Test-AlloyedPath",
+            ["gci"] = "Get-AlloyedChildItem",
+            ["gi"] = "Get-AlloyedItem",
+            ["tp"] = "Test-AlloyedPath",
         };
 
     public bool HasWrapper(string commandName)

@@ -44,4 +44,17 @@ public class HeuristicScriptAnalyzerTests
             .Should()
             .Equal("Get-ChildItem");
     }
+
+    [Fact]
+    public void AnalyzeContent_Should_ExtractSupportedAliases()
+    {
+        var analyzer = new HeuristicScriptAnalyzer();
+        var script = "gci -Path .\ngi -Path .\ntp -Path .";
+
+        var result = analyzer.AnalyzeContent("sample.ps1", script);
+
+        result.Commands.Select(c => c.CommandName)
+            .Should()
+            .Equal("gci", "gi", "tp");
+    }
 }

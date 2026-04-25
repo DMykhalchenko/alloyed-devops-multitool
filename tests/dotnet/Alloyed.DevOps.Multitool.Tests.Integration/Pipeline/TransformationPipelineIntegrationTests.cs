@@ -45,6 +45,46 @@ public class TransformationPipelineIntegrationTests
     }
 
     [Fact]
+    public void Execute_Should_ReplaceSupportedAliases()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "alloyed-integration-tests", Guid.NewGuid().ToString("N"));
+        var scriptPath = Path.Combine(root, "input.ps1");
+        var outputPath = Path.Combine(root, "out");
+
+        Directory.CreateDirectory(root);
+        File.WriteAllText(scriptPath, "gci -Path .\ngi -Path .\ntp -Path .");
+
+        try
+        {
+            var pipeline = PipelineBootstrap.CreateDefault();
+            var result = pipeline.Execute(new PipelineRequest(scriptPath, "AliasIntegrationModule", outputPath, true));
+
+            result.Success.Should().BeTrue();
+            result.CommandsFound.Should().Be(3);
+            result.CommandsReplaced.Should().Be(3);
+            result.MissingCommands.Should().BeEmpty();
+
+            var generatedPsm1 = Path.Combine(result.ModulePath, "AliasIntegrationModule.psm1");
+            File.Exists(generatedPsm1).Should().BeTrue();
+
+            var content = File.ReadAllText(generatedPsm1);
+            content.Should().Contain("Get-AlloyedChildItem");
+            content.Should().Contain("Get-AlloyedItem");
+            content.Should().Contain("Test-AlloyedPath");
+            content.Should().NotContain("gci -Path .");
+            content.Should().NotContain("gi -Path .");
+            content.Should().NotContain("tp -Path .");
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public void Execute_Should_RefuseOverwrite_WhenForceIsFalse()
     {
         var root = Path.Combine(Path.GetTempPath(), "alloyed-integration-tests", Guid.NewGuid().ToString("N"));

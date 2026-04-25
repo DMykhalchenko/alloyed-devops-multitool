@@ -261,7 +261,7 @@ public sealed partial class HeuristicScriptAnalyzer : IScriptAnalyzer
         return true;
     }
 
-    [GeneratedRegex(@"(?<![\w-])(?:(?<module>[A-Za-z0-9_.]+)\\)?(?<cmd>[A-Za-z]+-[A-Za-z][A-Za-z0-9-]*)", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"(?<![\w-])(?:(?<module>[A-Za-z0-9_.]+)\\)?(?<cmd>[A-Za-z]+-[A-Za-z][A-Za-z0-9-]*|gci|gi|tp)(?![\w-])", RegexOptions.CultureInvariant)]
     private static partial Regex CommandPattern();
 
     private enum ScanState
