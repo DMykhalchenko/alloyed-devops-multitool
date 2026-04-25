@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsTestProject>true</IsTestProject>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\dotnet\Alloyed.DevOps.Multitool.Core.Ast\Alloyed.DevOps.Multitool.Core.Ast.csproj" />
+    <ProjectReference Include="..\..\..\src\dotnet\Alloyed.DevOps.Multitool.Core.Catalog\Alloyed.DevOps.Multitool.Core.Catalog.csproj" />
+    <ProjectReference Include="..\..\..\src\dotnet\Alloyed.DevOps.Multitool.Core.Builders\Alloyed.DevOps.Multitool.Core.Builders.csproj" />
+    <ProjectReference Include="..\..\..\src\dotnet\Alloyed.DevOps.Multitool.Host.PowerShell\Alloyed.DevOps.Multitool.Host.PowerShell.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Fixtures\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

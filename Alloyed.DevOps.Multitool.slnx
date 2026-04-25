@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/dotnet/">
+    <Project Path="src/dotnet/Alloyed.DevOps.Multitool.Core.Ast/Alloyed.DevOps.Multitool.Core.Ast.csproj" />
+    <Project Path="src/dotnet/Alloyed.DevOps.Multitool.Core.Builders/Alloyed.DevOps.Multitool.Core.Builders.csproj" />
+    <Project Path="src/dotnet/Alloyed.DevOps.Multitool.Core.Catalog/Alloyed.DevOps.Multitool.Core.Catalog.csproj" />
+    <Project Path="src/dotnet/Alloyed.DevOps.Multitool.Core.Decoration/Alloyed.DevOps.Multitool.Core.Decoration.csproj" />
+    <Project Path="src/dotnet/Alloyed.DevOps.Multitool.Host.PowerShell/Alloyed.DevOps.Multitool.Host.PowerShell.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/dotnet/">
+    <Project Path="tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration/Alloyed.DevOps.Multitool.Tests.Integration.csproj" />
+    <Project Path="tests/dotnet/Alloyed.DevOps.Multitool.Tests.Unit/Alloyed.DevOps.Multitool.Tests.Unit.csproj" />
+  </Folder>
+</Solution>

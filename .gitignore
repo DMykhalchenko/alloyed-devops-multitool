@@ -1,0 +1,30 @@
+# Build output
+**/bin/
+**/obj/
+**/TestResults/
+artifacts/
+out/
+
+# Dotnet local state
+.dotnet-cli/
+*.user
+*.rsuser
+*.suo
+
+# IDE/editor local files
+.vs/
+.idea/
+.vscode/
+
+# Local environment/secrets
+.env
+.env.*
+*.pfx
+*.p12
+*.snk
+*.key
+*.pem
+
+# OS junk
+.DS_Store
+Thumbs.db

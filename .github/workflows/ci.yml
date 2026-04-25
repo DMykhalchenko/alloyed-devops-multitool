@@ -1,0 +1,66 @@
+name: Alloyed DevOps Multitool CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-build-and-smoke:
+    name: Native Build and Smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    env:
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      DOTNET_CLI_HOME: ${{ github.workspace }}/.dotnet-cli
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET from global.json
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore Alloyed.DevOps.Multitool.slnx --verbosity minimal
+
+      - name: Build
+        shell: pwsh
+        run: dotnet build Alloyed.DevOps.Multitool.slnx -c Debug --no-restore
+
+      - name: Unit tests
+        shell: pwsh
+        run: dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Unit/Alloyed.DevOps.Multitool.Tests.Unit.csproj -c Debug --no-build
+
+      - name: Integration tests
+        shell: pwsh
+        run: dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration/Alloyed.DevOps.Multitool.Tests.Integration.csproj -c Debug --no-build
+
+      - name: End-to-end smoke
+        shell: pwsh
+        run: pwsh -NoProfile -File tests/powershell/Smoke.Module.Tests.ps1
+
+  container-smoke:
+    name: Container Smoke (Ubuntu)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build container image via compose
+        run: docker compose -f compose.yaml build
+
+      - name: Run container smoke via compose
+        run: docker compose -f compose.yaml run --rm build
