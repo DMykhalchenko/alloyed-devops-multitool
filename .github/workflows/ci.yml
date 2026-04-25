@@ -34,6 +34,8 @@ jobs:
         uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
         with:
           global-json-file: global.json
+          dotnet-version: |
+            8.0.x
 
       - name: Restore
         shell: pwsh
@@ -57,7 +59,7 @@ jobs:
 
   container-smoke:
     name: gha/container-smoke
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
