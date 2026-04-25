@@ -1,5 +1,8 @@
 # alloyed-devops-multitool
 
+[![Alloyed DevOps Multitool CI](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/ci.yml/badge.svg)](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/ci.yml)
+[![Pull Request Checks](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/pull-request-checks.yml/badge.svg)](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/pull-request-checks.yml)
+
 .NET-first platform for AST-driven PowerShell transformation and decorator-enabled execution.
 
 ## Iteration 0 Status
