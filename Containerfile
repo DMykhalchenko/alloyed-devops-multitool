@@ -4,10 +4,10 @@ ARG DOTNET_VERSION=10.0
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
 WORKDIR /workspace
 
-# Copy full repository context (recommended build context: repository root)
+# Copy full standalone repository context
 COPY . .
 
-WORKDIR /workspace/projects/alloyed-devops-multitool
+WORKDIR /workspace
 
 # Deterministic CI-style restore/build
 RUN dotnet restore Alloyed.DevOps.Multitool.slnx
