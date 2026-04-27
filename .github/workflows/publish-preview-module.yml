@@ -50,7 +50,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $prerelease = "${{ inputs.prerelease_label }}.${{ inputs.prerelease_iteration }}"
+          $prerelease = "${{ inputs.prerelease_label }}${{ inputs.prerelease_iteration }}"
           $publishArgs = @(
             "-Owner", "${{ github.repository_owner }}",
             "-Repository", "${{ github.event.repository.name }}",

@@ -147,7 +147,7 @@ Use Actions -> `Publish Preview PowerShell Module` and fill:
 
 - `module_version`: base version, for example `0.2.0`
 - `prerelease_label`: usually `preview`
-- `prerelease_iteration`: for example `1` (result version: `0.2.0-preview.1`)
+- `prerelease_iteration`: for example `1` (result version: `0.2.0-preview1`)
 
 The workflow stages module files with compiled host assemblies and publishes to:
 `https://nuget.pkg.github.com/Ligare-Method/index.json`.
