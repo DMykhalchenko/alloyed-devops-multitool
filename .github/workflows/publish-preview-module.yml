@@ -51,15 +51,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $prerelease = "${{ inputs.prerelease_label }}${{ inputs.prerelease_iteration }}"
-          $publishArgs = @(
-            "-Owner", "${{ github.repository_owner }}",
-            "-Repository", "${{ github.event.repository.name }}",
-            "-ModuleVersion", "${{ inputs.module_version }}",
-            "-Prerelease", $prerelease
-          )
-
           if ("${{ inputs.skip_build }}" -eq "true") {
-            $publishArgs += "-SkipBuild"
+            & ./tools/publishing/Publish-PreviewModule.ps1 `
+              -Owner "${{ github.repository_owner }}" `
+              -Repository "${{ github.event.repository.name }}" `
+              -ModuleVersion "${{ inputs.module_version }}" `
+              -Prerelease $prerelease `
+              -SkipBuild
+          } else {
+            & ./tools/publishing/Publish-PreviewModule.ps1 `
+              -Owner "${{ github.repository_owner }}" `
+              -Repository "${{ github.event.repository.name }}" `
+              -ModuleVersion "${{ inputs.module_version }}" `
+              -Prerelease $prerelease
           }
-
-          & ./tools/publishing/Publish-PreviewModule.ps1 @publishArgs
