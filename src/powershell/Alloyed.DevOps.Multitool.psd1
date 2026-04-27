@@ -77,6 +77,3 @@
     VariablesToExport = @()
     AliasesToExport = @()
 }
-
-
-

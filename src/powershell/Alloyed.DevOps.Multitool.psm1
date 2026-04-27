@@ -415,6 +415,3 @@ function Get-AlloyedTransparencyModeStatus {
         SessionModeEnabled = [bool]$script:SessionModeEnabled
     }
 }
-
-
-

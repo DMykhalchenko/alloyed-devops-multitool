@@ -36,6 +36,20 @@ jobs:
           dotnet-version: |
             8.0.x
 
+      - name: Verify generated ports are up-to-date
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File tools/ports/Sync-PortsFromCatalog.ps1
+          $changed = git status --porcelain -- `
+            src/dotnet/Alloyed.DevOps.Multitool.Core.Catalog/Services/InMemoryWrapperCatalog.cs `
+            src/powershell/Alloyed.DevOps.Multitool.psm1 `
+            src/powershell/Alloyed.DevOps.Multitool.psd1
+          if (-not [string]::IsNullOrWhiteSpace(($changed | Out-String))) {
+            Write-Error "Generated ports files are out-of-date. Run tools/ports/Sync-PortsFromCatalog.ps1 and commit changes."
+            $changed
+            exit 1
+          }
+
       - name: Restore
         shell: pwsh
         run: dotnet restore Alloyed.DevOps.Multitool.slnx --verbosity minimal

@@ -174,6 +174,3 @@ public sealed class InMemoryWrapperCatalog : IWrapperCatalog
             .ToDictionary(static kv => kv.Key, static kv => kv.Value, StringComparer.OrdinalIgnoreCase);
     }
 }
-
-
-

@@ -23,8 +23,9 @@ function Set-SectionContent {
     $sectionStart = $startIndex + $StartMarker.Length
     $replacement = $lineEnding + (($ReplacementLines -join $lineEnding).TrimEnd()) + $lineEnding
     $updated = $text.Substring(0, $sectionStart) + $replacement + $text.Substring($endIndex)
+    $normalized = $updated.TrimEnd("`r", "`n") + $lineEnding
 
-    Set-Content -LiteralPath $Path -Value $updated
+    Set-Content -LiteralPath $Path -Value $normalized -NoNewline
 }
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)

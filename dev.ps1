@@ -21,6 +21,12 @@ $solution = "Alloyed.DevOps.Multitool.slnx"
 $unitProject = "tests/dotnet/Alloyed.DevOps.Multitool.Tests.Unit/Alloyed.DevOps.Multitool.Tests.Unit.csproj"
 $integrationProject = "tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration/Alloyed.DevOps.Multitool.Tests.Integration.csproj"
 $smokeScript = "tests/powershell/Smoke.Module.Tests.ps1"
+$portsSyncScript = "tools/ports/Sync-PortsFromCatalog.ps1"
+$generatedPortsTargets = @(
+    "src/dotnet/Alloyed.DevOps.Multitool.Core.Catalog/Services/InMemoryWrapperCatalog.cs",
+    "src/powershell/Alloyed.DevOps.Multitool.psm1",
+    "src/powershell/Alloyed.DevOps.Multitool.psd1"
+)
 
 function Invoke-Step {
     param(
@@ -53,6 +59,28 @@ function Get-TestArgs {
     }
 
     return ,$args
+}
+
+function Invoke-VerifyPortsSync {
+    Invoke-Step -Name "Verify ports sync is up-to-date" -Action {
+        pwsh -NoProfile -File $portsSyncScript
+
+        $changed = git status --porcelain -- $generatedPortsTargets
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to evaluate git status for generated ports targets."
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace(($changed | Out-String))) {
+            $changedText = ($changed | Out-String).Trim()
+            throw @"
+Generated ports files are out-of-date. Run:
+  pwsh -NoProfile -File $portsSyncScript
+
+Changed files:
+$changedText
+"@
+        }
+    }
 }
 
 if ($Restore) {
@@ -98,6 +126,8 @@ switch ($Stage) {
     }
 
     "full" {
+        Invoke-VerifyPortsSync
+
         Invoke-Step -Name "Build solution" -Action {
             $args = @("build", $solution, "-c", "Debug", "--nologo")
             if (-not $Restore) {
@@ -121,6 +151,8 @@ switch ($Stage) {
     }
 
     "ci" {
+        Invoke-VerifyPortsSync
+
         Invoke-Step -Name "Restore" -Action {
             dotnet restore $solution --nologo
         }
