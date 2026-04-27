@@ -1,6 +1,6 @@
 # pipeline fixture input
 Get-AlloyedChildItem -Path .
-Write-Host "Get-Item should stay literal"
+Write-AlloyedHost "Get-Item should stay literal"
 @"
 Test-Path -Path ./inside-here-string
 "@

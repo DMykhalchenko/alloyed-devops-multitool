@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(git rev-parse --show-toplevel)"
+exec pwsh -NoProfile -NonInteractive -File "$root/.githooks/pre-push.ps1"

@@ -3,215 +3,145 @@
 [![Alloyed DevOps Multitool CI](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/ci.yml/badge.svg)](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/ci.yml)
 [![Pull Request Checks](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/pull-request-checks.yml/badge.svg)](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/pull-request-checks.yml)
 
-.NET-first platform for AST-driven PowerShell transformation and decorator-enabled execution.
+Multitool transforms PowerShell scripts into wrapper-based modules and routes supported operations through a decorator pipeline (ErrorHandling, Observability, Correlation).
 
-## Iteration 0 Status
-- Solution scaffold created (`Alloyed.DevOps.Multitool.slnx`).
-- Core projects scaffolded:
-  - `Alloyed.DevOps.Multitool.Core.Ast`
-  - `Alloyed.DevOps.Multitool.Core.Builders`
-  - `Alloyed.DevOps.Multitool.Core.Decoration`
-  - `Alloyed.DevOps.Multitool.Core.Catalog`
-  - `Alloyed.DevOps.Multitool.Host.PowerShell`
-- Test placeholders scaffolded:
-  - `Alloyed.DevOps.Multitool.Tests.Unit`
-  - `Alloyed.DevOps.Multitool.Tests.Integration`
-  - `tests/powershell`
+## Why this project
 
-## Iteration 1 Progress
-- Added AST contracts:
-  - `IScriptAnalyzer`
-  - `ScriptAnalysisResult`
-  - `CommandUsage`
-  - `ParseDiagnostic`
-- Added first analyzer implementation: `HeuristicScriptAnalyzer`.
-- Current implementation is dependency-free and deterministic, intended as a bridge until full PowerShell AST integration is approved.
+- Keep existing PowerShell scripts, but make execution deterministic and governable.
+- Add cross-cutting behavior without polluting business logic.
+- Build a path from migration to production usage with reversible milestones.
 
-## Iteration 2 Progress
-- Added catalog contracts and model:
-  - `IWrapperCatalog`
-  - `ResolutionResult`
-- Added deterministic in-memory catalog implementation:
-  - `InMemoryWrapperCatalog`
-- Initial wrapper map includes `Get-ChildItem` family:
-  - `Get-ChildItem -> Get-AlloyedChildItem`
-  - `Get-Item -> Get-AlloyedItem`
-  - `Test-Path -> Test-AlloyedPath`
-- Added compatibility aliases for migration scenarios:
-  - `gci -> Get-AlloyedChildItem`
-  - `gi -> Get-AlloyedItem`
-  - `tp -> Test-AlloyedPath`
+## Current baseline (verified 2026-04-27)
 
-## Iteration 3 Progress
-- Added transform and builder contracts:
-  - `ICommandTransformer`
-  - `IModuleBuilder`
-  - `ModuleBuildRequest`
-  - `ModuleBuildResult`
-- Added transform implementation:
-  - `TextCommandTransformer` (stable command replacement by map)
-- Added module generation implementation:
-  - `MinimalModuleBuilder` (`.psm1`, `.psd1`, `README.md` output)
+- `pwsh -NoProfile -File ./dev.ps1 -Stage ci` passes locally.
+- Unit tests: `40` passed.
+- Integration tests: `8` passed.
+- End-to-end smoke: passed.
 
-## Iteration 4 Progress
-- Added decoration contracts:
-  - `IDecoratorPolicy`
-  - `IDecorator`
-  - `IDecorationSink`
-  - `IDecorationPipeline`
-- Added decoration models:
-  - `DecorationContext`
-  - `DecorationEvent`
-  - `DecorationExecutionException`
-- Added pipeline implementation:
-  - `DecorationPipeline`
-  - `NullDecorationSink`
-- Added core decorators:
-  - `ErrorHandlingDecorator` (single-owner normalization)
-  - `ObservabilityDecorator` (enter/exit/error events)
-  - `CorrelationDecorator` (correlation tag management)
+## Quick start
 
-## Iteration 5 Progress
-- Added Host pipeline contracts/models:
-  - `ITransformationPipeline`
-  - `PipelineRequest`
-  - `PipelineResult`
-- Added host runtime:
-  - `TransformationPipeline`
-  - `PipelineBootstrap`
-- Connected host to core modules (`Ast`, `Catalog`, `Builders`) via project references.
-- Added PowerShell wrappers module:
-  - `src/powershell/Alloyed.DevOps.Multitool.psd1`
-  - `src/powershell/Alloyed.DevOps.Multitool.psm1`
-- Exposed commands:
-  - `New-AlloyedModuleTransform`
-  - `Test-AlloyedTransform`
-  - `Get-AlloyedCatalog`
+### 1. Run local CI-equivalent
 
-## Centralized Build Baseline
-- `Directory.Packages.props`
-- `Directory.Build.props`
-- `NuGet.config`
-- `global.json`
-- `.editorconfig`
-- `.config/PSScriptAnalyzerSettings.psd1`
-- `.markdownlint.json`
+```powershell
+pwsh -NoProfile -File ./dev.ps1 -Stage ci
+```
 
-## Notes
-- Test projects are currently dependency-free placeholders.
-- Full test framework wiring is planned in next iteration.
-- Current decoration runtime is pipeline-based and dependency-free (no external DynamicProxy package yet).
+### 2. Transform script into a module
 
-## Validation Snapshot (2026-03-05)
-- `dotnet restore Alloyed.DevOps.Multitool.slnx` succeeded.
-- `dotnet build Alloyed.DevOps.Multitool.slnx -c Debug --no-restore` succeeded.
+```powershell
+Import-Module ./src/powershell/Alloyed.DevOps.Multitool.psd1 -Force
 
-## Container Build
-Build from repository root:
+New-AlloyedModuleTransform `
+  -ScriptPath ./samples/sample-transform-input.ps1 `
+  -ModuleName DemoAlloyed `
+  -OutputPath ./temp/out `
+  -Force
+```
+
+### 3. Validate only (without keeping output)
+
+```powershell
+Test-AlloyedTransform -ScriptPath ./samples/sample-transform-input.ps1
+```
+
+### 4. View available command mappings
+
+```powershell
+Get-AlloyedCatalog
+```
+
+## How it works
+
+```mermaid
+flowchart LR
+    A["PowerShell Script (.ps1)"] --> B["AST Analyzer<br/>PowerShellScriptAnalyzer"]
+    B --> C["Wrapper Catalog<br/>InMemoryWrapperCatalog"]
+    C --> D["Transformer<br/>TextCommandTransformer"]
+    D --> E["Module Builder<br/>.psm1 + .psd1"]
+    E --> F["Imported Module"]
+    F --> G["Decorator Pipeline<br/>ErrorHandling -> Observability -> Correlation"]
+```
+
+## Roadmap alignment
+
+The migration backlog is tracked as GitHub milestones:
+
+- [M1: Rebaseline & Phase 1 Spec Closure](https://github.com/Ligare-Method/alloyed-devops-multitool/milestone/1)
+- [M2: Phase 2-3 Hardening (Vertical Slice + Portability)](https://github.com/Ligare-Method/alloyed-devops-multitool/milestone/2)
+- [M3: Phase 4 Capability Expansion](https://github.com/Ligare-Method/alloyed-devops-multitool/milestone/3)
+- [M4: Phase 5 Convergence & Governance](https://github.com/Ligare-Method/alloyed-devops-multitool/milestone/4)
+
+```mermaid
+flowchart TD
+    M1["M1 Rebaseline + Spec"] --> M2["M2 Vertical Slice + Portability"]
+    M2 --> M3["M3 Capabilities Expansion"]
+    M3 --> M4["M4 Governance + Convergence"]
+
+    M2 --> G1["Goal: transform script to decorator-backed module"]
+    M3 --> G2["Goal: session mode + expanded ports"]
+    M3 --> G3["Goal: Bogus-powered sandbox scenarios"]
+    M4 --> G4["Goal: release/quality governance"]
+```
+
+## Collaborator workflow
+
+### Setup once
+
+```powershell
+pwsh -NoProfile -File ./dev.ps1 -Stage setup
+```
+
+This enables `.githooks/pre-push` (`build + format check + PowerShell lint + unit tests`).
+
+### Fast loop
+
+```powershell
+pwsh -NoProfile -File ./dev.ps1
+pwsh -NoProfile -File ./dev.ps1 -Stage integration
+pwsh -NoProfile -File ./dev.ps1 -Stage full
+```
+
+### Targeted test run
+
+```powershell
+pwsh -NoProfile -File ./dev.ps1 -Stage unit -Filter "FullyQualifiedName~TransformationPipeline"
+```
+
+## CI/CD
+
+- Main CI workflow: `.github/workflows/ci.yml`
+- PR governance workflow: `.github/workflows/pull-request-checks.yml`
+- Optional Jenkins Podman remote template: `Jenkinsfile.podman-remote`
+- Podman/Jenkins runbook: `docs/temporary-ci-podman-remote.md`
+
+## Containers
+
+Build:
 
 ```powershell
 docker build -f Containerfile -t alloyed-devops-multitool:dev .
 ```
 
-Run build validation inside container:
+Run:
 
 ```powershell
 docker run --rm alloyed-devops-multitool:dev
 ```
 
-## Compose
-Run containerized build with Compose:
+Compose:
 
 ```powershell
 docker compose -f compose.yaml build
 docker compose -f compose.yaml run --rm build
 ```
 
-## End-to-End Smoke
-Run the full local smoke scenario:
+## Repository map
 
-```powershell
-pwsh -NoProfile -File tests/powershell/Smoke.Module.Tests.ps1
-```
-
-This verifies:
-- module import,
-- catalog exposure,
-- script transformation,
-- generated module output content.
-
-## CI
-Workflow:
-- `.github/workflows/alloyed-devops-multitool-ci.yml`
-
-It runs:
-- native build + smoke on Windows and Linux,
-- container smoke on Ubuntu via `compose.yaml`.
-
-## Unit test status
-- `tests/dotnet/Alloyed.DevOps.Multitool.Tests.Unit` is now active (xUnit).
-- Current baseline: 5 passing tests (Ast, Catalog, Builders, Decoration).
-
-Run:
-
-```powershell
-dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Unit/Alloyed.DevOps.Multitool.Tests.Unit.csproj -c Debug
-```
-
-## Integration test status
-- `tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration` is active (xUnit).
-- Current baseline: 2 passing integration tests for `TransformationPipeline`.
-
-Run:
-
-```powershell
-dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration/Alloyed.DevOps.Multitool.Tests.Integration.csproj -c Debug
-```
-
-## Temporary Jenkins CI (Podman Remote)
-Use template pipeline:
-- `Jenkinsfile.podman-remote`
-
-This pipeline builds and runs the project container on remote connection `centos10-root`.
-
-Reference runbook:
-- `docs/temporary-ci-podman-remote.md`
-
-## Fast Dev Loop
-Use local helper script for repeatable, fast inner-loop commands:
-
-```powershell
-# first run (with restore)
-pwsh -NoProfile -File ./dev.ps1 -Stage fast -Restore
-
-# fast default loop (unit tests)
-pwsh -NoProfile -File ./dev.ps1
-
-# targeted runs
-pwsh -NoProfile -File ./dev.ps1 -Stage integration
-pwsh -NoProfile -File ./dev.ps1 -Stage full
-pwsh -NoProfile -File ./dev.ps1 -Stage ci
-
-# optional xUnit filter
-pwsh -NoProfile -File ./dev.ps1 -Stage unit -Filter "FullyQualifiedName~TransformationPipeline"
-```
-
-The script configures `DOTNET_CLI_HOME` to `./.dotnet-cli` to avoid machine-global state and keep runs deterministic.
-
-`-Stage ci` mirrors the GitHub Actions execution order (`restore -> build -> unit -> integration -> smoke`) for local pre-push validation.
-
-## GitHub Repo Bootstrap (CI/CD + Copilot)
-To initialize this project as a standalone GitHub repository:
-
-```powershell
-# from this repository root
-pwsh -NoProfile -File ./bootstrap-github.ps1 `
-  -Owner <github-user-or-org> `
-  -RepoName alloyed-devops-multitool `
-  -CreateRemote `
-  -Push
-```
-
-What gets prepared for GitHub:
-- Standalone workflow: `.github/workflows/ci.yml`
-- Copilot repository guidance: `.github/copilot-instructions.md`
+- `src/dotnet/Alloyed.DevOps.Multitool.Core.Ast` - AST analysis
+- `src/dotnet/Alloyed.DevOps.Multitool.Core.Catalog` - command mapping catalog
+- `src/dotnet/Alloyed.DevOps.Multitool.Core.Builders` - transformation and module build
+- `src/dotnet/Alloyed.DevOps.Multitool.Core.Decoration` - decorator pipeline runtime
+- `src/dotnet/Alloyed.DevOps.Multitool.Host.PowerShell` - orchestration host
+- `src/powershell` - user-facing PowerShell module
+- `tests/dotnet` - unit and integration tests
+- `tests/powershell` - smoke flow

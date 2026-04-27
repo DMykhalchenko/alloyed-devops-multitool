@@ -12,7 +12,7 @@ public static class PipelineBootstrap
 {
     public static ITransformationPipeline CreateDefault()
     {
-        IScriptAnalyzer analyzer = new HeuristicScriptAnalyzer();
+        IScriptAnalyzer analyzer = new PowerShellScriptAnalyzer();
         IWrapperCatalog catalog = new InMemoryWrapperCatalog();
         ICommandTransformer transformer = new TextCommandTransformer();
         IModuleBuilder moduleBuilder = new MinimalModuleBuilder();

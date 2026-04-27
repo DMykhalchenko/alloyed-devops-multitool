@@ -229,8 +229,8 @@ public class TransformationPipelineIntegrationTests
 
             result.Success.Should().BeTrue();
             result.CommandsFound.Should().BeGreaterThan(0);
-            result.CommandsReplaced.Should().Be(2);
-            result.MissingCommands.Should().BeEquivalentTo(new[] { "Unknown-Command", "Write-Host" });
+            result.CommandsReplaced.Should().Be(3);
+            result.MissingCommands.Should().BeEquivalentTo(new[] { "Unknown-Command" });
 
             var generatedPsm1 = Path.Combine(result.ModulePath, "GoldenPipelineModule.psm1");
             File.Exists(generatedPsm1).Should().BeTrue();

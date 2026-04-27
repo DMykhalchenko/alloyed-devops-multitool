@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet("fast", "full", "ci", "build", "unit", "integration", "smoke")]
+    [ValidateSet("fast", "full", "ci", "build", "unit", "integration", "smoke", "setup")]
     [string]$Stage = "fast",
     [switch]$Restore,
     [string]$Filter
@@ -140,6 +140,16 @@ switch ($Stage) {
         Invoke-Step -Name "PowerShell smoke" -Action {
             pwsh -NoProfile -File $smokeScript
         }
+    }
+
+    "setup" {
+        Invoke-Step -Name "Install git hooks" -Action {
+            git config core.hooksPath .githooks
+            if ($IsLinux -or $IsMacOS) {
+                chmod +x .githooks/pre-push
+            }
+        }
+        Write-Host "  pre-push hook active: build + format check + PS lint + unit tests" -ForegroundColor DarkGray
     }
 }
 

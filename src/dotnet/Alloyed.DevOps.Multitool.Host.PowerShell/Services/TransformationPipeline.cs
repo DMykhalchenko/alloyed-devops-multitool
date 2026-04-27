@@ -186,7 +186,8 @@ public sealed class TransformationPipeline : ITransformationPipeline
 
     private static string InferAstCode(string message)
     {
-        if (message.Contains("unterminated string", StringComparison.OrdinalIgnoreCase))
+        if (message.Contains("unterminated string", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("missing the terminator", StringComparison.OrdinalIgnoreCase))
         {
             return "AST-UNTERMINATED-STRING";
         }

@@ -31,6 +31,82 @@ function Resolve-FailOnSeverity {
     return $null
 }
 
+# ---------------------------------------------------------------------------
+# Provider.FileSystem wrappers
+# ---------------------------------------------------------------------------
+
+function Get-AlloyedChildItem { Get-ChildItem @PSBoundParameters }
+function Get-AlloyedItem       { Get-Item @PSBoundParameters }
+function Test-AlloyedPath      { Test-Path @PSBoundParameters }
+
+# ---------------------------------------------------------------------------
+# System.Utility wrappers
+# ---------------------------------------------------------------------------
+
+function Select-AlloyedString    { Select-String @PSBoundParameters }
+function ConvertTo-AlloyedJson   { ConvertTo-Json @PSBoundParameters }
+function ConvertFrom-AlloyedJson { ConvertFrom-Json @PSBoundParameters }
+function ConvertTo-AlloyedXml    { ConvertTo-Xml @PSBoundParameters }
+function Get-AlloyedRandom       { Get-Random @PSBoundParameters }
+function Measure-AlloyedObject   { Measure-Object @PSBoundParameters }
+function Sort-AlloyedObject      { Sort-Object @PSBoundParameters }
+function Group-AlloyedObject     { Group-Object @PSBoundParameters }
+
+# ---------------------------------------------------------------------------
+# System.Diagnostics wrappers
+# ---------------------------------------------------------------------------
+
+function Get-AlloyedProcess      { Get-Process @PSBoundParameters }
+function Start-AlloyedProcess    { Start-Process @PSBoundParameters }
+function Stop-AlloyedProcess     { Stop-Process @PSBoundParameters }
+function Wait-AlloyedProcess     { Wait-Process @PSBoundParameters }
+function Test-AlloyedConnection  { Test-Connection @PSBoundParameters }
+function Invoke-AlloyedCommand   { Invoke-Command @PSBoundParameters }
+
+# ---------------------------------------------------------------------------
+# System.Archive wrappers
+# ---------------------------------------------------------------------------
+
+function Compress-AlloyedArchive { Compress-Archive @PSBoundParameters }
+function Expand-AlloyedArchive   { Expand-Archive @PSBoundParameters }
+
+# ---------------------------------------------------------------------------
+# System.Management wrappers
+# ---------------------------------------------------------------------------
+
+function Get-AlloyedService     { Get-Service @PSBoundParameters }
+function Start-AlloyedService   { Start-Service @PSBoundParameters }
+function Stop-AlloyedService    { Stop-Service @PSBoundParameters }
+function Restart-AlloyedService { Restart-Service @PSBoundParameters }
+
+# ---------------------------------------------------------------------------
+# System.Security wrappers
+# ---------------------------------------------------------------------------
+
+function Get-AlloyedAcl                   { Get-Acl @PSBoundParameters }
+function Set-AlloyedAcl                   { Set-Acl @PSBoundParameters }
+function Get-AlloyedCredential            { Get-Credential @PSBoundParameters }
+function ConvertTo-AlloyedSecureString    { ConvertTo-SecureString @PSBoundParameters }
+function ConvertFrom-AlloyedSecureString  { ConvertFrom-SecureString @PSBoundParameters }
+function Get-AlloyedAuthenticodeSignature { Get-AuthenticodeSignature @PSBoundParameters }
+function Set-AlloyedAuthenticodeSignature { Set-AuthenticodeSignature @PSBoundParameters }
+function New-AlloyedSelfSignedCertificate { New-SelfSignedCertificate @PSBoundParameters }
+function Get-AlloyedPfxCertificate        { Get-PfxCertificate @PSBoundParameters }
+function Export-AlloyedPfxCertificate     { Export-PfxCertificate @PSBoundParameters }
+
+# ---------------------------------------------------------------------------
+# System.Host wrappers
+# ---------------------------------------------------------------------------
+
+function Write-AlloyedHost     { Write-Host @PSBoundParameters }
+function Read-AlloyedHost      { Read-Host @PSBoundParameters }
+function Write-AlloyedProgress { Write-Progress @PSBoundParameters }
+function Clear-AlloyedHost     { Clear-Host }
+
+# ---------------------------------------------------------------------------
+# Pipeline cmdlets
+# ---------------------------------------------------------------------------
+
 function New-AlloyedModuleTransform {
     [CmdletBinding(SupportsShouldProcess)]
     param(

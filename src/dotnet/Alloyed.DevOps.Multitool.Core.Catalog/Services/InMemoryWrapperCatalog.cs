@@ -10,12 +10,75 @@ public sealed class InMemoryWrapperCatalog : IWrapperCatalog
     private static readonly IReadOnlyDictionary<string, string> WrapperMap =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
+            // Provider.FileSystem
             ["Get-ChildItem"] = "Get-AlloyedChildItem",
-            ["Get-Item"] = "Get-AlloyedItem",
-            ["Test-Path"] = "Test-AlloyedPath",
-            ["gci"] = "Get-AlloyedChildItem",
-            ["gi"] = "Get-AlloyedItem",
-            ["tp"] = "Test-AlloyedPath",
+            ["Get-Item"]      = "Get-AlloyedItem",
+            ["Test-Path"]     = "Test-AlloyedPath",
+            ["gci"]           = "Get-AlloyedChildItem",
+            ["gi"]            = "Get-AlloyedItem",
+            ["tp"]            = "Test-AlloyedPath",
+
+            // System.Utility
+            ["Select-String"]    = "Select-AlloyedString",
+            ["ConvertTo-Json"]   = "ConvertTo-AlloyedJson",
+            ["ConvertFrom-Json"] = "ConvertFrom-AlloyedJson",
+            ["ConvertTo-Xml"]    = "ConvertTo-AlloyedXml",
+            ["Get-Random"]       = "Get-AlloyedRandom",
+            ["Measure-Object"]   = "Measure-AlloyedObject",
+            ["Sort-Object"]      = "Sort-AlloyedObject",
+            ["Group-Object"]     = "Group-AlloyedObject",
+            ["sls"]              = "Select-AlloyedString",
+            ["measure"]          = "Measure-AlloyedObject",
+            ["sort"]             = "Sort-AlloyedObject",
+            ["group"]            = "Group-AlloyedObject",
+
+            // System.Diagnostics
+            ["Get-Process"]      = "Get-AlloyedProcess",
+            ["Start-Process"]    = "Start-AlloyedProcess",
+            ["Stop-Process"]     = "Stop-AlloyedProcess",
+            ["Wait-Process"]     = "Wait-AlloyedProcess",
+            ["Test-Connection"]  = "Test-AlloyedConnection",
+            ["Invoke-Command"]   = "Invoke-AlloyedCommand",
+            ["ps"]               = "Get-AlloyedProcess",
+            ["gps"]              = "Get-AlloyedProcess",
+            ["saps"]             = "Start-AlloyedProcess",
+            ["start"]            = "Start-AlloyedProcess",
+            ["kill"]             = "Stop-AlloyedProcess",
+            ["spps"]             = "Stop-AlloyedProcess",
+            ["icm"]              = "Invoke-AlloyedCommand",
+
+            // System.Archive
+            ["Compress-Archive"] = "Compress-AlloyedArchive",
+            ["Expand-Archive"]   = "Expand-AlloyedArchive",
+
+            // System.Management
+            ["Get-Service"]      = "Get-AlloyedService",
+            ["Start-Service"]    = "Start-AlloyedService",
+            ["Stop-Service"]     = "Stop-AlloyedService",
+            ["Restart-Service"]  = "Restart-AlloyedService",
+            ["gsv"]              = "Get-AlloyedService",
+            ["sasv"]             = "Start-AlloyedService",
+            ["spsv"]             = "Stop-AlloyedService",
+
+            // System.Security
+            ["Get-Acl"]                   = "Get-AlloyedAcl",
+            ["Set-Acl"]                   = "Set-AlloyedAcl",
+            ["Get-Credential"]            = "Get-AlloyedCredential",
+            ["ConvertTo-SecureString"]    = "ConvertTo-AlloyedSecureString",
+            ["ConvertFrom-SecureString"]  = "ConvertFrom-AlloyedSecureString",
+            ["Get-AuthenticodeSignature"] = "Get-AlloyedAuthenticodeSignature",
+            ["Set-AuthenticodeSignature"] = "Set-AlloyedAuthenticodeSignature",
+            ["New-SelfSignedCertificate"] = "New-AlloyedSelfSignedCertificate",
+            ["Get-PfxCertificate"]        = "Get-AlloyedPfxCertificate",
+            ["Export-PfxCertificate"]     = "Export-AlloyedPfxCertificate",
+
+            // System.Host
+            ["Write-Host"]     = "Write-AlloyedHost",
+            ["Read-Host"]      = "Read-AlloyedHost",
+            ["Write-Progress"] = "Write-AlloyedProgress",
+            ["Clear-Host"]     = "Clear-AlloyedHost",
+            ["cls"]            = "Clear-AlloyedHost",
+            ["clear"]          = "Clear-AlloyedHost",
         };
 
     public bool HasWrapper(string commandName)
