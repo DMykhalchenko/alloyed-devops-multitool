@@ -50,6 +50,12 @@ Test-AlloyedTransform -ScriptPath ./samples/sample-transform-input.ps1
 Get-AlloyedCatalog
 ```
 
+### 5. Inspect resolved runtime configuration
+
+```powershell
+Get-AlloyedRuntimeConfiguration
+```
+
 ## How it works
 
 ```mermaid
@@ -113,6 +119,7 @@ pwsh -NoProfile -File ./dev.ps1 -Stage unit -Filter "FullyQualifiedName~Transfor
 - PR governance workflow: `.github/workflows/pull-request-checks.yml`
 - Optional Jenkins Podman remote template: `Jenkinsfile.podman-remote`
 - Podman/Jenkins runbook: `docs/temporary-ci-podman-remote.md`
+- Runtime config reference: `docs/runtime-configuration.md`
 
 ## Containers
 

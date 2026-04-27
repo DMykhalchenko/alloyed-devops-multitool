@@ -14,17 +14,20 @@ public sealed class TransformationPipeline : ITransformationPipeline
     private readonly IWrapperCatalog _catalog;
     private readonly ICommandTransformer _transformer;
     private readonly IModuleBuilder _moduleBuilder;
+    private readonly RuntimeConfiguration _configuration;
 
     public TransformationPipeline(
         IScriptAnalyzer analyzer,
         IWrapperCatalog catalog,
         ICommandTransformer transformer,
-        IModuleBuilder moduleBuilder)
+        IModuleBuilder moduleBuilder,
+        RuntimeConfiguration? configuration = null)
     {
         _analyzer = analyzer;
         _catalog = catalog;
         _transformer = transformer;
         _moduleBuilder = moduleBuilder;
+        _configuration = configuration ?? RuntimeConfiguration.Default;
     }
 
     public PipelineResult Execute(PipelineRequest request)
@@ -60,7 +63,8 @@ public sealed class TransformationPipeline : ITransformationPipeline
             var analysis = _analyzer.AnalyzeFile(request.ScriptPath);
             var pipelineDiagnostics = MapAstDiagnostics(analysis.Diagnostics);
 
-            if (request.FailOnSeverity is { } threshold && pipelineDiagnostics.Any(d => d.Severity >= threshold))
+            var effectiveFailOnSeverity = request.FailOnSeverity ?? _configuration.Runtime.FailOnSeverity;
+            if (effectiveFailOnSeverity is { } threshold && pipelineDiagnostics.Any(d => d.Severity >= threshold))
             {
                 var message = $"Pipeline stopped because analyzer diagnostics met fail policy ({threshold} or higher).";
                 var diagnostics = pipelineDiagnostics.Concat(new[]

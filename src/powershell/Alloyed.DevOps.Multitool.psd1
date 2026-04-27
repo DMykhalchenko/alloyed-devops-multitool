@@ -13,6 +13,7 @@
         'New-AlloyedModuleTransform',
         'Test-AlloyedTransform',
         'Get-AlloyedCatalog',
+        'Get-AlloyedRuntimeConfiguration',
         # Provider.FileSystem wrappers
         'Get-AlloyedChildItem',
         'Get-AlloyedItem',

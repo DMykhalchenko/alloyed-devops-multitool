@@ -182,3 +182,33 @@ function Get-AlloyedCatalog {
         }
     }
 }
+
+function Get-AlloyedRuntimeConfiguration {
+    [CmdletBinding()]
+    param(
+        [Parameter()] [string]$BasePath = (Get-Location).Path
+    )
+
+    Initialize-AlloyedHostAssembly
+
+    $configuration = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateRuntimeConfiguration($BasePath, $null)
+
+    [pscustomobject]@{
+        Runtime = [pscustomobject]@{
+            FailOnSeverity = if ($null -eq $configuration.Runtime.FailOnSeverity) { $null } else { $configuration.Runtime.FailOnSeverity.ToString() }
+        }
+        Session = [pscustomobject]@{
+            Enabled = $configuration.Session.Enabled
+        }
+        Decoration = [pscustomobject]@{
+            EnableErrorHandling = $configuration.Decoration.EnableErrorHandling
+            EnableObservability = $configuration.Decoration.EnableObservability
+            EnableCorrelation = $configuration.Decoration.EnableCorrelation
+            EnableTransparency = $configuration.Decoration.EnableTransparency
+        }
+        Mocking = [pscustomobject]@{
+            Enabled = $configuration.Mocking.Enabled
+            Mode = $configuration.Mocking.Mode.ToString()
+        }
+    }
+}
