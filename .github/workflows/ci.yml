@@ -41,7 +41,6 @@ jobs:
         run: |
           pwsh -NoProfile -File tools/ports/Sync-PortsFromCatalog.ps1
           $changed = git status --porcelain -- `
-            src/dotnet/Alloyed.DevOps.Multitool.Core.Catalog/Services/InMemoryWrapperCatalog.cs `
             src/powershell/Alloyed.DevOps.Multitool.psm1 `
             src/powershell/Alloyed.DevOps.Multitool.psd1
           if (-not [string]::IsNullOrWhiteSpace(($changed | Out-String))) {

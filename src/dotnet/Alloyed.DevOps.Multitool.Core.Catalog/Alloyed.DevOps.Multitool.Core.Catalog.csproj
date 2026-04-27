@@ -6,4 +6,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\tools\ports\ports.catalog.json">
+      <LogicalName>Alloyed.DevOps.Multitool.Core.Catalog.Resources.ports.catalog.json</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

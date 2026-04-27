@@ -23,7 +23,6 @@ $integrationProject = "tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration/A
 $smokeScript = "tests/powershell/Smoke.Module.Tests.ps1"
 $portsSyncScript = "tools/ports/Sync-PortsFromCatalog.ps1"
 $generatedPortsTargets = @(
-    "src/dotnet/Alloyed.DevOps.Multitool.Core.Catalog/Services/InMemoryWrapperCatalog.cs",
     "src/powershell/Alloyed.DevOps.Multitool.psm1",
     "src/powershell/Alloyed.DevOps.Multitool.psd1"
 )

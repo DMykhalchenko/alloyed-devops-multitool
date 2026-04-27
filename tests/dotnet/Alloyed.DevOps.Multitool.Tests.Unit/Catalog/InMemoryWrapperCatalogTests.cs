@@ -274,4 +274,16 @@ public class InMemoryWrapperCatalogTests
         result.Replacements["clear"].Should().Be("Clear-AlloyedHost");
         result.MissingCommands.Should().BeEmpty();
     }
+
+    [Fact]
+    public void Constructor_Should_ThrowClearError_WhenCatalogFileDoesNotExist()
+    {
+        var missingPath = Path.Combine(Path.GetTempPath(), $"ports-{Guid.NewGuid():N}.json");
+
+        var act = () => new InMemoryWrapperCatalog(missingPath);
+
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage($"*Ports catalog file was not found*{missingPath}*");
+    }
 }
