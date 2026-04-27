@@ -8,9 +8,20 @@ $script:TransparencyModeOverride = $null
 function Initialize-AlloyedHostAssembly {
     if ($script:AssemblyLoaded) { return }
 
+    $packagedDllPath = Join-Path $PSScriptRoot 'lib/Alloyed.DevOps.Multitool.Host.PowerShell.dll'
+    $packagedDecorationDllPath = Join-Path $PSScriptRoot 'lib/Alloyed.DevOps.Multitool.Core.Decoration.dll'
+
     $moduleRoot = Split-Path -Parent $PSScriptRoot
-    $dllPath = Join-Path $moduleRoot 'dotnet/Alloyed.DevOps.Multitool.Host.PowerShell/bin/Debug/net8.0/Alloyed.DevOps.Multitool.Host.PowerShell.dll'
-    $decorationDllPath = Join-Path $moduleRoot 'dotnet/Alloyed.DevOps.Multitool.Core.Decoration/bin/Debug/net8.0/Alloyed.DevOps.Multitool.Core.Decoration.dll'
+    $devDllPath = Join-Path $moduleRoot 'dotnet/Alloyed.DevOps.Multitool.Host.PowerShell/bin/Debug/net8.0/Alloyed.DevOps.Multitool.Host.PowerShell.dll'
+    $devDecorationDllPath = Join-Path $moduleRoot 'dotnet/Alloyed.DevOps.Multitool.Core.Decoration/bin/Debug/net8.0/Alloyed.DevOps.Multitool.Core.Decoration.dll'
+
+    if ((Test-Path $packagedDllPath) -and (Test-Path $packagedDecorationDllPath)) {
+        $dllPath = $packagedDllPath
+        $decorationDllPath = $packagedDecorationDllPath
+    } else {
+        $dllPath = $devDllPath
+        $decorationDllPath = $devDecorationDllPath
+    }
 
     if (-not (Test-Path $dllPath)) {
         throw "Host assembly not found at '$dllPath'. Build solution first."

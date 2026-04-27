@@ -1,0 +1,65 @@
+name: Publish Preview PowerShell Module
+
+on:
+  workflow_dispatch:
+    inputs:
+      module_version:
+        description: "Stable module version (without prerelease suffix), e.g. 0.2.0"
+        required: true
+        default: "0.2.0"
+      prerelease_label:
+        description: "Preview label prefix, e.g. preview"
+        required: true
+        default: "preview"
+      prerelease_iteration:
+        description: "Preview iteration number, e.g. 1"
+        required: true
+        default: "1"
+      skip_build:
+        description: "Skip dotnet build (use existing binaries)"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-preview-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish-preview:
+    name: gha/publish-preview
+    runs-on: ubuntu-slim
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Setup .NET from global.json
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
+        with:
+          global-json-file: global.json
+          dotnet-version: |
+            8.0.x
+
+      - name: Publish preview module to GitHub Packages
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $prerelease = "${{ inputs.prerelease_label }}.${{ inputs.prerelease_iteration }}"
+          $args = @(
+            "-Owner", "${{ github.repository_owner }}",
+            "-Repository", "${{ github.event.repository.name }}",
+            "-ModuleVersion", "${{ inputs.module_version }}",
+            "-Prerelease", $prerelease
+          )
+
+          if ("${{ inputs.skip_build }}" -eq "true") {
+            $args += "-SkipBuild"
+          }
+
+          & ./tools/publishing/Publish-PreviewModule.ps1 @args

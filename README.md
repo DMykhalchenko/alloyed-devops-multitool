@@ -136,9 +136,21 @@ pwsh -NoProfile -File ./dev.ps1 -Stage unit -Filter "FullyQualifiedName~Transfor
 
 - Main CI workflow: `.github/workflows/ci.yml`
 - PR governance workflow: `.github/workflows/pull-request-checks.yml`
+- Preview package publish workflow: `.github/workflows/publish-preview-module.yml`
 - Optional Jenkins Podman remote template: `Jenkinsfile.podman-remote`
 - Podman/Jenkins runbook: `docs/temporary-ci-podman-remote.md`
 - Runtime config reference: `docs/runtime-configuration.md`
+
+### Publish preview module to GitHub Packages
+
+Use Actions -> `Publish Preview PowerShell Module` and fill:
+
+- `module_version`: base version, for example `0.2.0`
+- `prerelease_label`: usually `preview`
+- `prerelease_iteration`: for example `1` (result version: `0.2.0-preview.1`)
+
+The workflow stages module files with compiled host assemblies and publishes to:
+`https://nuget.pkg.github.com/Ligare-Method/index.json`.
 
 ## Containers
 
