@@ -14,6 +14,9 @@
         'Test-AlloyedTransform',
         'Get-AlloyedCatalog',
         'Get-AlloyedRuntimeConfiguration',
+        'Enable-AlloyedSessionMode',
+        'Disable-AlloyedSessionMode',
+        'Get-AlloyedSessionModeStatus',
         # Provider.FileSystem wrappers
         'Get-AlloyedChildItem',
         'Get-AlloyedItem',

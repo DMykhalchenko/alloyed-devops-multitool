@@ -23,6 +23,32 @@ dotnet build (Join-Path $repoRoot 'Alloyed.DevOps.Multitool.slnx') -c Debug --no
 
 Import-Module $moduleManifest -Force
 
+# Validate session mode aliasing and rollback behavior.
+$beforeGciAlias = (Get-Alias -Name gci -ErrorAction SilentlyContinue).Definition
+$sessionEnable = Enable-AlloyedSessionMode
+if (-not $sessionEnable.Enabled) {
+    throw 'Enable-AlloyedSessionMode did not enable session mode.'
+}
+
+$childItemAlias = Get-Alias -Name Get-ChildItem -ErrorAction SilentlyContinue
+if (-not $childItemAlias -or $childItemAlias.Definition -ne 'Get-AlloyedChildItem') {
+    throw 'Session mode did not map Get-ChildItem to Get-AlloyedChildItem.'
+}
+
+$disableResult = Disable-AlloyedSessionMode
+if ($disableResult.Enabled) {
+    throw 'Disable-AlloyedSessionMode did not disable session mode.'
+}
+
+$afterGciAlias = (Get-Alias -Name gci -ErrorAction SilentlyContinue).Definition
+if ($beforeGciAlias -ne $afterGciAlias) {
+    throw "Session mode did not restore original gci alias. Before='$beforeGciAlias' After='$afterGciAlias'"
+}
+
+if ((Get-Command -Name Get-ChildItem).CommandType -ne 'Cmdlet') {
+    throw 'Get-ChildItem command did not revert to native cmdlet after disabling session mode.'
+}
+
 # Validate catalog is exposed and contains expected mapping.
 $catalog = Get-AlloyedCatalog
 $childItemMapping = $catalog | Where-Object { $_.Command -eq 'Get-ChildItem' } | Select-Object -First 1

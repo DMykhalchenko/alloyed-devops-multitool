@@ -1,4 +1,7 @@
 $script:AssemblyLoaded = $false
+$script:SessionModeEnabled = $false
+$script:SessionModeAliases = @()
+$script:SessionModeAliasBackup = @{}
 
 function Initialize-AlloyedHostAssembly {
     if ($script:AssemblyLoaded) { return }
@@ -210,5 +213,92 @@ function Get-AlloyedRuntimeConfiguration {
             Enabled = $configuration.Mocking.Enabled
             Mode = $configuration.Mocking.Mode.ToString()
         }
+    }
+}
+
+function Enable-AlloyedSessionMode {
+    [CmdletBinding()]
+    param(
+        [Parameter()] [switch]$Force
+    )
+
+    Initialize-AlloyedHostAssembly
+
+    if ($script:SessionModeEnabled -and -not $Force.IsPresent) {
+        return Get-AlloyedSessionModeStatus
+    }
+
+    $catalog = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateCatalog()
+    $mappings = $catalog.GetMappings()
+
+    $applied = New-Object System.Collections.Generic.List[string]
+    $skipped = New-Object System.Collections.Generic.List[string]
+    $script:SessionModeAliasBackup = @{}
+
+    foreach ($entry in ($mappings.GetEnumerator() | Sort-Object Key)) {
+        $name = $entry.Key
+        $wrapper = $entry.Value
+
+        $wrapperCommand = Get-Command -Name $wrapper -ErrorAction SilentlyContinue
+        $sourceCommand = Get-Command -Name $name -ErrorAction SilentlyContinue
+        if (-not $wrapperCommand -or -not $sourceCommand) {
+            $skipped.Add($name)
+            continue
+        }
+
+        $existingAlias = Get-Alias -Name $name -ErrorAction SilentlyContinue
+        if ($existingAlias) {
+            $script:SessionModeAliasBackup[$name] = $existingAlias.Definition
+        } else {
+            $script:SessionModeAliasBackup[$name] = $null
+        }
+
+        Set-Alias -Name $name -Value $wrapper -Scope Global -Force
+        $applied.Add($name)
+    }
+
+    $script:SessionModeAliases = @($applied.ToArray())
+    $script:SessionModeEnabled = $true
+
+    [pscustomobject]@{
+        Enabled = $true
+        AppliedAliases = @($applied.ToArray())
+        SkippedCommands = @($skipped.ToArray())
+    }
+}
+
+function Disable-AlloyedSessionMode {
+    [CmdletBinding()]
+    param()
+
+    if (-not $script:SessionModeEnabled) {
+        return Get-AlloyedSessionModeStatus
+    }
+
+    foreach ($name in @($script:SessionModeAliases)) {
+        $prior = $script:SessionModeAliasBackup[$name]
+        if ($null -eq $prior) {
+            Remove-Item -LiteralPath "Alias:$name" -Force -ErrorAction SilentlyContinue
+            continue
+        }
+
+        Set-Alias -Name $name -Value $prior -Scope Global -Force
+    }
+
+    $script:SessionModeEnabled = $false
+    $script:SessionModeAliases = @()
+    $script:SessionModeAliasBackup = @{}
+
+    Get-AlloyedSessionModeStatus
+}
+
+function Get-AlloyedSessionModeStatus {
+    [CmdletBinding()]
+    param()
+
+    [pscustomobject]@{
+        Enabled = $script:SessionModeEnabled
+        ActiveAliasCount = @($script:SessionModeAliases).Count
+        ActiveAliases = @($script:SessionModeAliases)
     }
 }

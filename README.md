@@ -56,6 +56,16 @@ Get-AlloyedCatalog
 Get-AlloyedRuntimeConfiguration
 ```
 
+### 6. Enable and disable session mode
+
+```powershell
+Enable-AlloyedSessionMode
+Get-AlloyedSessionModeStatus
+
+# when finished
+Disable-AlloyedSessionMode
+```
+
 ## How it works
 
 ```mermaid

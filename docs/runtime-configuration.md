@@ -56,3 +56,11 @@ Alloyed:
     Enabled: false
     Mode: InMemory
 ```
+
+## Session mode commands
+
+```powershell
+Enable-AlloyedSessionMode
+Get-AlloyedSessionModeStatus
+Disable-AlloyedSessionMode
+```
