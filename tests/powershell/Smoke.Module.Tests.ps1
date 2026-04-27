@@ -54,8 +54,11 @@ $transparencyEnabled = Enable-AlloyedTransparencyMode
 if (-not $transparencyEnabled.Enabled) {
     throw 'Enable-AlloyedTransparencyMode did not enable transparency mode.'
 }
+if (-not $transparencyEnabled.SessionModeEnabled) {
+    throw 'Enable-AlloyedTransparencyMode did not enable session mode by default.'
+}
 
-$null = Get-AlloyedChildItem -Path $repoRoot
+$null = Get-ChildItem -Path $repoRoot
 
 $transparencyDisabled = Disable-AlloyedTransparencyMode
 if ($transparencyDisabled.Enabled) {

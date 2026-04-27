@@ -75,6 +75,8 @@ Get-AlloyedTransparencyModeStatus
 Disable-AlloyedTransparencyMode
 ```
 
+By default `Enable-AlloyedTransparencyMode` enables session mode too, so supported native commands in the current session emit decorator watch logs.
+
 ## How it works
 
 ```mermaid
@@ -124,6 +126,14 @@ This enables `.githooks/pre-push` (`build + format check + PowerShell lint + uni
 pwsh -NoProfile -File ./dev.ps1
 pwsh -NoProfile -File ./dev.ps1 -Stage integration
 pwsh -NoProfile -File ./dev.ps1 -Stage full
+```
+
+### Port catalog code generation
+
+Wrappers, wrapper exports, and catalog mappings are generated from `tools/ports/ports.catalog.json`:
+
+```powershell
+pwsh -NoProfile -File ./tools/ports/Sync-PortsFromCatalog.ps1
 ```
 
 ### Targeted test run

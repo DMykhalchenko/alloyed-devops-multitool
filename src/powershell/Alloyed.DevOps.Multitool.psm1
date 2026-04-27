@@ -84,7 +84,8 @@ function Invoke-AlloyedDecoratedCommand {
         [Parameter(Mandatory)] [string]$Operation,
         [Parameter(Mandatory)] [scriptblock]$Action,
         [hashtable]$Parameters = @{},
-        [object[]]$Arguments = @()
+        [object[]]$Arguments = @(),
+        [object[]]$InputObjects = @()
     )
 
     Initialize-AlloyedDecorationPipeline
@@ -104,7 +105,13 @@ function Invoke-AlloyedDecoratedCommand {
     }
 
     $context = [Alloyed.DevOps.Multitool.Core.Decoration.Models.DecorationContext]::new($Operation, $tags)
-    $invoke = [System.Func[object]] { & $Action @Arguments }
+    $invoke = [System.Func[object]] {
+        if ($InputObjects.Count -gt 0) {
+            return $InputObjects | & $Action @Arguments
+        }
+
+        return & $Action @Arguments
+    }
     return $script:DecorationPipeline.Execute[object]($context, $invoke)
 }
 
@@ -112,86 +119,58 @@ function Invoke-AlloyedDecoratedCommand {
 # Provider.FileSystem wrappers
 # ---------------------------------------------------------------------------
 
-function Get-AlloyedChildItem { Invoke-AlloyedDecoratedCommand -Operation 'Get-ChildItem' -Arguments $args -Action {Microsoft.PowerShell.Management\Get-ChildItem @args } }
-function Get-AlloyedItem       { Invoke-AlloyedDecoratedCommand -Operation 'Get-Item' -Arguments $args -Action {Microsoft.PowerShell.Management\Get-Item @args } }
-function Test-AlloyedPath      { Invoke-AlloyedDecoratedCommand -Operation 'Test-Path' -Arguments $args -Action {Microsoft.PowerShell.Management\Test-Path @args } }
-function Copy-AlloyedItem      { Invoke-AlloyedDecoratedCommand -Operation 'Copy-Item' -Arguments $args -Action {Microsoft.PowerShell.Management\Copy-Item @args } }
-function Move-AlloyedItem      { Invoke-AlloyedDecoratedCommand -Operation 'Move-Item' -Arguments $args -Action {Microsoft.PowerShell.Management\Move-Item @args } }
-function Remove-AlloyedItem    { Invoke-AlloyedDecoratedCommand -Operation 'Remove-Item' -Arguments $args -Action {Microsoft.PowerShell.Management\Remove-Item @args } }
-function New-AlloyedItem       { Invoke-AlloyedDecoratedCommand -Operation 'New-Item' -Arguments $args -Action {Microsoft.PowerShell.Management\New-Item @args } }
-function Get-AlloyedContent    { Invoke-AlloyedDecoratedCommand -Operation 'Get-Content' -Arguments $args -Action {Microsoft.PowerShell.Management\Get-Content @args } }
-function Set-AlloyedContent    { Invoke-AlloyedDecoratedCommand -Operation 'Set-Content' -Arguments $args -Action {Microsoft.PowerShell.Management\Set-Content @args } }
-function Get-AlloyedLocation   { Invoke-AlloyedDecoratedCommand -Operation 'Get-Location' -Arguments $args -Action {Microsoft.PowerShell.Management\Get-Location @args } }
-function Set-AlloyedLocation   { Invoke-AlloyedDecoratedCommand -Operation 'Set-Location' -Arguments $args -Action {Microsoft.PowerShell.Management\Set-Location @args } }
-function Push-AlloyedLocation  { Invoke-AlloyedDecoratedCommand -Operation 'Push-Location' -Arguments $args -Action {Microsoft.PowerShell.Management\Push-Location @args } }
-function Pop-AlloyedLocation   { Invoke-AlloyedDecoratedCommand -Operation 'Pop-Location' -Arguments $args -Action {Microsoft.PowerShell.Management\Pop-Location @args } }
-function Join-AlloyedPath      { Invoke-AlloyedDecoratedCommand -Operation 'Join-Path' -Arguments $args -Action {Microsoft.PowerShell.Management\Join-Path @args } }
-function Split-AlloyedPath     { Invoke-AlloyedDecoratedCommand -Operation 'Split-Path' -Arguments $args -Action {Microsoft.PowerShell.Management\Split-Path @args } }
-function Resolve-AlloyedPath   { Invoke-AlloyedDecoratedCommand -Operation 'Resolve-Path' -Arguments $args -Action {Microsoft.PowerShell.Management\Resolve-Path @args } }
-
-# ---------------------------------------------------------------------------
-# System.Utility wrappers
-# ---------------------------------------------------------------------------
-
-function Select-AlloyedString    { Invoke-AlloyedDecoratedCommand -Operation 'Select-String' -Arguments $args -Action {Microsoft.PowerShell.Utility\Select-String @args } }
-function ConvertTo-AlloyedJson   { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-Json' -Arguments $args -Action {Microsoft.PowerShell.Utility\ConvertTo-Json @args } }
-function ConvertFrom-AlloyedJson { Invoke-AlloyedDecoratedCommand -Operation 'ConvertFrom-Json' -Arguments $args -Action {Microsoft.PowerShell.Utility\ConvertFrom-Json @args } }
-function ConvertTo-AlloyedXml    { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-Xml' -Arguments $args -Action {Microsoft.PowerShell.Utility\ConvertTo-Xml @args } }
-function Get-AlloyedRandom       { Invoke-AlloyedDecoratedCommand -Operation 'Get-Random' -Arguments $args -Action {Microsoft.PowerShell.Utility\Get-Random @args } }
-function Measure-AlloyedObject   { Invoke-AlloyedDecoratedCommand -Operation 'Measure-Object' -Arguments $args -Action {Microsoft.PowerShell.Utility\Measure-Object @args } }
-function Sort-AlloyedObject      { Invoke-AlloyedDecoratedCommand -Operation 'Sort-Object' -Arguments $args -Action {Microsoft.PowerShell.Utility\Sort-Object @args } }
-function Group-AlloyedObject     { Invoke-AlloyedDecoratedCommand -Operation 'Group-Object' -Arguments $args -Action {Microsoft.PowerShell.Utility\Group-Object @args } }
-
-# ---------------------------------------------------------------------------
-# System.Diagnostics wrappers
-# ---------------------------------------------------------------------------
-
-function Get-AlloyedProcess      { Invoke-AlloyedDecoratedCommand -Operation 'Get-Process' -Arguments $args -Action {Microsoft.PowerShell.Management\Get-Process @args } }
-function Start-AlloyedProcess    { Invoke-AlloyedDecoratedCommand -Operation 'Start-Process' -Arguments $args -Action {Microsoft.PowerShell.Management\Start-Process @args } }
-function Stop-AlloyedProcess     { Invoke-AlloyedDecoratedCommand -Operation 'Stop-Process' -Arguments $args -Action {Microsoft.PowerShell.Management\Stop-Process @args } }
-function Wait-AlloyedProcess     { Invoke-AlloyedDecoratedCommand -Operation 'Wait-Process' -Arguments $args -Action {Microsoft.PowerShell.Management\Wait-Process @args } }
-function Test-AlloyedConnection  { Invoke-AlloyedDecoratedCommand -Operation 'Test-Connection' -Arguments $args -Action {Microsoft.PowerShell.Management\Test-Connection @args } }
-function Invoke-AlloyedCommand   { Invoke-AlloyedDecoratedCommand -Operation 'Invoke-Command' -Arguments $args -Action {Microsoft.PowerShell.Core\Invoke-Command @args } }
-
-# ---------------------------------------------------------------------------
-# System.Archive wrappers
-# ---------------------------------------------------------------------------
-
-function Compress-AlloyedArchive { Invoke-AlloyedDecoratedCommand -Operation 'Compress-Archive' -Arguments $args -Action {Microsoft.PowerShell.Archive\Compress-Archive @args } }
-function Expand-AlloyedArchive   { Invoke-AlloyedDecoratedCommand -Operation 'Expand-Archive' -Arguments $args -Action {Microsoft.PowerShell.Archive\Expand-Archive @args } }
-
-# ---------------------------------------------------------------------------
-# System.Management wrappers
-# ---------------------------------------------------------------------------
-
-function Get-AlloyedService     { Invoke-AlloyedDecoratedCommand -Operation 'Get-Service' -Arguments $args -Action {Microsoft.PowerShell.Management\Get-Service @args } }
-function Start-AlloyedService   { Invoke-AlloyedDecoratedCommand -Operation 'Start-Service' -Arguments $args -Action {Microsoft.PowerShell.Management\Start-Service @args } }
-function Stop-AlloyedService    { Invoke-AlloyedDecoratedCommand -Operation 'Stop-Service' -Arguments $args -Action {Microsoft.PowerShell.Management\Stop-Service @args } }
-function Restart-AlloyedService { Invoke-AlloyedDecoratedCommand -Operation 'Restart-Service' -Arguments $args -Action {Microsoft.PowerShell.Management\Restart-Service @args } }
-
-# ---------------------------------------------------------------------------
-# System.Security wrappers
-# ---------------------------------------------------------------------------
-
-function Get-AlloyedAcl                   { Invoke-AlloyedDecoratedCommand -Operation 'Get-Acl' -Arguments $args -Action {Microsoft.PowerShell.Security\Get-Acl @args } }
-function Set-AlloyedAcl                   { Invoke-AlloyedDecoratedCommand -Operation 'Set-Acl' -Arguments $args -Action {Microsoft.PowerShell.Security\Set-Acl @args } }
-function Get-AlloyedCredential            { Invoke-AlloyedDecoratedCommand -Operation 'Get-Credential' -Arguments $args -Action {Microsoft.PowerShell.Security\Get-Credential @args } }
-function ConvertTo-AlloyedSecureString    { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-SecureString' -Arguments $args -Action {Microsoft.PowerShell.Security\ConvertTo-SecureString @args } }
-function ConvertFrom-AlloyedSecureString  { Invoke-AlloyedDecoratedCommand -Operation 'ConvertFrom-SecureString' -Arguments $args -Action {Microsoft.PowerShell.Security\ConvertFrom-SecureString @args } }
-function Get-AlloyedAuthenticodeSignature { Invoke-AlloyedDecoratedCommand -Operation 'Get-AuthenticodeSignature' -Arguments $args -Action {Microsoft.PowerShell.Security\Get-AuthenticodeSignature @args } }
-function Set-AlloyedAuthenticodeSignature { Invoke-AlloyedDecoratedCommand -Operation 'Set-AuthenticodeSignature' -Arguments $args -Action {Microsoft.PowerShell.Security\Set-AuthenticodeSignature @args } }
-function New-AlloyedSelfSignedCertificate { Invoke-AlloyedDecoratedCommand -Operation 'New-SelfSignedCertificate' -Arguments $args -Action {Microsoft.PowerShell.Security\New-SelfSignedCertificate @args } }
-function Get-AlloyedPfxCertificate        { Invoke-AlloyedDecoratedCommand -Operation 'Get-PfxCertificate' -Arguments $args -Action {Microsoft.PowerShell.Security\Get-PfxCertificate @args } }
-function Export-AlloyedPfxCertificate     { Invoke-AlloyedDecoratedCommand -Operation 'Export-PfxCertificate' -Arguments $args -Action {Microsoft.PowerShell.Security\Export-PfxCertificate @args } }
-
-# ---------------------------------------------------------------------------
-# System.Host wrappers
-# ---------------------------------------------------------------------------
-
-function Write-AlloyedHost     { Invoke-AlloyedDecoratedCommand -Operation 'Write-Host' -Arguments $args -Action {Microsoft.PowerShell.Utility\Write-Host @args } }
-function Read-AlloyedHost      { Invoke-AlloyedDecoratedCommand -Operation 'Read-Host' -Arguments $args -Action {Microsoft.PowerShell.Utility\Read-Host @args } }
-function Write-AlloyedProgress { Invoke-AlloyedDecoratedCommand -Operation 'Write-Progress' -Arguments $args -Action {Microsoft.PowerShell.Utility\Write-Progress @args } }
-function Clear-AlloyedHost     { Invoke-AlloyedDecoratedCommand -Operation 'Clear-Host' -Parameters @{} -Action { Microsoft.PowerShell.Core\Clear-Host } }
+# <auto-generated:wrappers>
+function Clear-AlloyedHost { Invoke-AlloyedDecoratedCommand -Operation 'Clear-Host' -Parameters @{} -Action { Microsoft.PowerShell.Core\Clear-Host } }
+function Compress-AlloyedArchive { Invoke-AlloyedDecoratedCommand -Operation 'Compress-Archive' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Archive\Compress-Archive @args } }
+function ConvertFrom-AlloyedJson { Invoke-AlloyedDecoratedCommand -Operation 'ConvertFrom-Json' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Utility\ConvertFrom-Json @args } }
+function ConvertFrom-AlloyedSecureString { Invoke-AlloyedDecoratedCommand -Operation 'ConvertFrom-SecureString' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Security\ConvertFrom-SecureString @args } }
+function ConvertTo-AlloyedJson { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-Json' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Utility\ConvertTo-Json @args } }
+function ConvertTo-AlloyedSecureString { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-SecureString' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Security\ConvertTo-SecureString @args } }
+function ConvertTo-AlloyedXml { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-Xml' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Utility\ConvertTo-Xml @args } }
+function Copy-AlloyedItem { Invoke-AlloyedDecoratedCommand -Operation 'Copy-Item' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Copy-Item @args } }
+function Expand-AlloyedArchive { Invoke-AlloyedDecoratedCommand -Operation 'Expand-Archive' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Archive\Expand-Archive @args } }
+function Export-AlloyedPfxCertificate { Invoke-AlloyedDecoratedCommand -Operation 'Export-PfxCertificate' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Security\Export-PfxCertificate @args } }
+function Get-AlloyedAcl { Invoke-AlloyedDecoratedCommand -Operation 'Get-Acl' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Security\Get-Acl @args } }
+function Get-AlloyedAuthenticodeSignature { Invoke-AlloyedDecoratedCommand -Operation 'Get-AuthenticodeSignature' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Security\Get-AuthenticodeSignature @args } }
+function Get-AlloyedChildItem { Invoke-AlloyedDecoratedCommand -Operation 'Get-ChildItem' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Get-ChildItem @args } }
+function Get-AlloyedContent { Invoke-AlloyedDecoratedCommand -Operation 'Get-Content' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Get-Content @args } }
+function Get-AlloyedCredential { Invoke-AlloyedDecoratedCommand -Operation 'Get-Credential' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Security\Get-Credential @args } }
+function Get-AlloyedItem { Invoke-AlloyedDecoratedCommand -Operation 'Get-Item' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Get-Item @args } }
+function Get-AlloyedLocation { Invoke-AlloyedDecoratedCommand -Operation 'Get-Location' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Get-Location @args } }
+function Get-AlloyedPfxCertificate { Invoke-AlloyedDecoratedCommand -Operation 'Get-PfxCertificate' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Security\Get-PfxCertificate @args } }
+function Get-AlloyedProcess { Invoke-AlloyedDecoratedCommand -Operation 'Get-Process' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Get-Process @args } }
+function Get-AlloyedRandom { Invoke-AlloyedDecoratedCommand -Operation 'Get-Random' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Utility\Get-Random @args } }
+function Get-AlloyedService { Invoke-AlloyedDecoratedCommand -Operation 'Get-Service' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Get-Service @args } }
+function Group-AlloyedObject { Invoke-AlloyedDecoratedCommand -Operation 'Group-Object' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Utility\Group-Object @args } }
+function Invoke-AlloyedCommand { Invoke-AlloyedDecoratedCommand -Operation 'Invoke-Command' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Core\Invoke-Command @args } }
+function Join-AlloyedPath { Invoke-AlloyedDecoratedCommand -Operation 'Join-Path' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Join-Path @args } }
+function Measure-AlloyedObject { Invoke-AlloyedDecoratedCommand -Operation 'Measure-Object' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Utility\Measure-Object @args } }
+function Move-AlloyedItem { Invoke-AlloyedDecoratedCommand -Operation 'Move-Item' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Move-Item @args } }
+function New-AlloyedItem { Invoke-AlloyedDecoratedCommand -Operation 'New-Item' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\New-Item @args } }
+function New-AlloyedSelfSignedCertificate { Invoke-AlloyedDecoratedCommand -Operation 'New-SelfSignedCertificate' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Security\New-SelfSignedCertificate @args } }
+function Pop-AlloyedLocation { Invoke-AlloyedDecoratedCommand -Operation 'Pop-Location' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Pop-Location @args } }
+function Push-AlloyedLocation { Invoke-AlloyedDecoratedCommand -Operation 'Push-Location' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Push-Location @args } }
+function Read-AlloyedHost { Invoke-AlloyedDecoratedCommand -Operation 'Read-Host' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Utility\Read-Host @args } }
+function Remove-AlloyedItem { Invoke-AlloyedDecoratedCommand -Operation 'Remove-Item' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Remove-Item @args } }
+function Resolve-AlloyedPath { Invoke-AlloyedDecoratedCommand -Operation 'Resolve-Path' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Resolve-Path @args } }
+function Restart-AlloyedService { Invoke-AlloyedDecoratedCommand -Operation 'Restart-Service' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Restart-Service @args } }
+function Select-AlloyedString { Invoke-AlloyedDecoratedCommand -Operation 'Select-String' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Utility\Select-String @args } }
+function Set-AlloyedAcl { Invoke-AlloyedDecoratedCommand -Operation 'Set-Acl' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Security\Set-Acl @args } }
+function Set-AlloyedAuthenticodeSignature { Invoke-AlloyedDecoratedCommand -Operation 'Set-AuthenticodeSignature' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Security\Set-AuthenticodeSignature @args } }
+function Set-AlloyedContent { Invoke-AlloyedDecoratedCommand -Operation 'Set-Content' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Set-Content @args } }
+function Set-AlloyedLocation { Invoke-AlloyedDecoratedCommand -Operation 'Set-Location' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Set-Location @args } }
+function Sort-AlloyedObject { Invoke-AlloyedDecoratedCommand -Operation 'Sort-Object' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Utility\Sort-Object @args } }
+function Split-AlloyedPath { Invoke-AlloyedDecoratedCommand -Operation 'Split-Path' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Split-Path @args } }
+function Start-AlloyedProcess { Invoke-AlloyedDecoratedCommand -Operation 'Start-Process' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Start-Process @args } }
+function Start-AlloyedService { Invoke-AlloyedDecoratedCommand -Operation 'Start-Service' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Start-Service @args } }
+function Stop-AlloyedProcess { Invoke-AlloyedDecoratedCommand -Operation 'Stop-Process' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Stop-Process @args } }
+function Stop-AlloyedService { Invoke-AlloyedDecoratedCommand -Operation 'Stop-Service' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Stop-Service @args } }
+function Test-AlloyedConnection { Invoke-AlloyedDecoratedCommand -Operation 'Test-Connection' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Test-Connection @args } }
+function Test-AlloyedPath { Invoke-AlloyedDecoratedCommand -Operation 'Test-Path' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Test-Path @args } }
+function Wait-AlloyedProcess { Invoke-AlloyedDecoratedCommand -Operation 'Wait-Process' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Management\Wait-Process @args } }
+function Write-AlloyedHost { Invoke-AlloyedDecoratedCommand -Operation 'Write-Host' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Utility\Write-Host @args } }
+function Write-AlloyedProgress { Invoke-AlloyedDecoratedCommand -Operation 'Write-Progress' -Arguments $args -InputObjects @($input) -Action {Microsoft.PowerShell.Utility\Write-Progress @args } }
+# </auto-generated:wrappers>
 
 # ---------------------------------------------------------------------------
 # Pipeline cmdlets
@@ -265,7 +244,7 @@ function Get-AlloyedCatalog {
     $catalog = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateCatalog()
     $mappings = $catalog.GetMappings()
 
-    foreach ($item in $mappings.GetEnumerator() | Sort-Object Key) {
+    foreach ($item in $mappings.GetEnumerator() | Microsoft.PowerShell.Utility\Sort-Object Key) {
         [pscustomobject]@{
             Command = $item.Key
             Wrapper = $item.Value
@@ -406,7 +385,13 @@ function Get-AlloyedSessionModeStatus {
 
 function Enable-AlloyedTransparencyMode {
     [CmdletBinding()]
-    param()
+    param(
+        [Parameter()] [switch]$SkipSessionMode
+    )
+
+    if (-not $SkipSessionMode.IsPresent) {
+        $null = Enable-AlloyedSessionMode -Force
+    }
 
     $script:TransparencyModeOverride = $true
     Get-AlloyedTransparencyModeStatus
@@ -427,5 +412,9 @@ function Get-AlloyedTransparencyModeStatus {
     [pscustomobject]@{
         Enabled = Resolve-AlloyedTransparencyEnabled
         Override = if ($null -eq $script:TransparencyModeOverride) { '<config>' } else { [bool]$script:TransparencyModeOverride }
+        SessionModeEnabled = [bool]$script:SessionModeEnabled
     }
 }
+
+
+
