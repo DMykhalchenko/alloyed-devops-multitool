@@ -66,6 +66,14 @@ Get-AlloyedSessionModeStatus
 Disable-AlloyedSessionMode
 ```
 
+### 7. Enable and disable transparency watch mode
+
+```powershell
+Enable-AlloyedTransparencyMode
+Get-AlloyedTransparencyModeStatus
+Disable-AlloyedTransparencyMode
+```
+
 ## How it works
 
 ```mermaid

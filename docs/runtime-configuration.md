@@ -24,6 +24,7 @@ $env:ALLOYED__RUNTIME__FAILONSEVERITY = "Warning"
 $env:ALLOYED__SESSION__ENABLED = "true"
 $env:ALLOYED__MOCKING__ENABLED = "true"
 $env:ALLOYED__MOCKING__MODE = "InMemory"
+$env:ALLOYED__DECORATION__ENABLETRANSPARENCY = "true"
 ```
 
 ## Keys reference
@@ -64,3 +65,22 @@ Enable-AlloyedSessionMode
 Get-AlloyedSessionModeStatus
 Disable-AlloyedSessionMode
 ```
+
+## Transparency watch mode
+
+Enable from config:
+
+```powershell
+$env:ALLOYED__DECORATION__ENABLETRANSPARENCY = "true"
+```
+
+Or toggle at runtime for current session:
+
+```powershell
+Enable-AlloyedTransparencyMode
+Get-AlloyedTransparencyModeStatus
+Disable-AlloyedTransparencyMode
+```
+
+When enabled, wrappers emit sanitized watch events through `TransparencyDecorator`.
+Sensitive tags (for example keys containing `password`, `secret`, `token`, `apikey`, `credential`) are redacted.

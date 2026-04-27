@@ -49,6 +49,19 @@ if ((Get-Command -Name Get-ChildItem).CommandType -ne 'Cmdlet') {
     throw 'Get-ChildItem command did not revert to native cmdlet after disabling session mode.'
 }
 
+# Validate transparency toggle surface.
+$transparencyEnabled = Enable-AlloyedTransparencyMode
+if (-not $transparencyEnabled.Enabled) {
+    throw 'Enable-AlloyedTransparencyMode did not enable transparency mode.'
+}
+
+$null = Get-AlloyedChildItem -Path $repoRoot
+
+$transparencyDisabled = Disable-AlloyedTransparencyMode
+if ($transparencyDisabled.Enabled) {
+    throw 'Disable-AlloyedTransparencyMode did not disable transparency mode.'
+}
+
 # Validate catalog is exposed and contains expected mapping.
 $catalog = Get-AlloyedCatalog
 $childItemMapping = $catalog | Where-Object { $_.Command -eq 'Get-ChildItem' } | Select-Object -First 1

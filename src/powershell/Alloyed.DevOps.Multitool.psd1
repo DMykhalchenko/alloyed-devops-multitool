@@ -17,6 +17,9 @@
         'Enable-AlloyedSessionMode',
         'Disable-AlloyedSessionMode',
         'Get-AlloyedSessionModeStatus',
+        'Enable-AlloyedTransparencyMode',
+        'Disable-AlloyedTransparencyMode',
+        'Get-AlloyedTransparencyModeStatus',
         # Provider.FileSystem wrappers
         'Get-AlloyedChildItem',
         'Get-AlloyedItem',

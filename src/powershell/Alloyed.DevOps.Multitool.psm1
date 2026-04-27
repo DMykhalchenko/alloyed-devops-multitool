@@ -2,17 +2,24 @@ $script:AssemblyLoaded = $false
 $script:SessionModeEnabled = $false
 $script:SessionModeAliases = @()
 $script:SessionModeAliasBackup = @{}
+$script:DecorationPipeline = $null
+$script:TransparencyModeOverride = $null
 
 function Initialize-AlloyedHostAssembly {
     if ($script:AssemblyLoaded) { return }
 
     $moduleRoot = Split-Path -Parent $PSScriptRoot
     $dllPath = Join-Path $moduleRoot 'dotnet/Alloyed.DevOps.Multitool.Host.PowerShell/bin/Debug/net8.0/Alloyed.DevOps.Multitool.Host.PowerShell.dll'
+    $decorationDllPath = Join-Path $moduleRoot 'dotnet/Alloyed.DevOps.Multitool.Core.Decoration/bin/Debug/net8.0/Alloyed.DevOps.Multitool.Core.Decoration.dll'
 
     if (-not (Test-Path $dllPath)) {
         throw "Host assembly not found at '$dllPath'. Build solution first."
     }
+    if (-not (Test-Path $decorationDllPath)) {
+        throw "Decoration assembly not found at '$decorationDllPath'. Build solution first."
+    }
 
+    Add-Type -Path $decorationDllPath
     Add-Type -Path $dllPath
     $script:AssemblyLoaded = $true
 }
@@ -34,77 +41,132 @@ function Resolve-FailOnSeverity {
     return $null
 }
 
+function Initialize-AlloyedDecorationPipeline {
+    if ($null -ne $script:DecorationPipeline) { return }
+
+    Initialize-AlloyedHostAssembly
+
+    $nullSink = [Alloyed.DevOps.Multitool.Core.Decoration.Services.NullDecorationSink]::new()
+    $consoleSink = [Alloyed.DevOps.Multitool.Core.Decoration.Services.ConsoleDecorationSink]::new()
+
+    $decorators = [System.Collections.Generic.List[Alloyed.DevOps.Multitool.Core.Decoration.Contracts.IDecorator]]::new()
+    $decorators.Add([Alloyed.DevOps.Multitool.Core.Decoration.Decorators.ErrorHandlingDecorator]::new())
+    $decorators.Add([Alloyed.DevOps.Multitool.Core.Decoration.Decorators.CorrelationDecorator]::new())
+    $decorators.Add([Alloyed.DevOps.Multitool.Core.Decoration.Decorators.ObservabilityDecorator]::new($nullSink))
+    $decorators.Add([Alloyed.DevOps.Multitool.Core.Decoration.Decorators.TransparencyDecorator]::new($consoleSink))
+
+    $script:DecorationPipeline = [Alloyed.DevOps.Multitool.Core.Decoration.Services.DecorationPipeline]::new($decorators)
+}
+
+function Resolve-AlloyedTransparencyEnabled {
+    if ($null -ne $script:TransparencyModeOverride) {
+        return [bool]$script:TransparencyModeOverride
+    }
+
+    $configuration = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateRuntimeConfiguration((Get-Location).Path, $null)
+    return [bool]$configuration.Decoration.EnableTransparency
+}
+
+function Invoke-AlloyedDecoratedCommand {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)] [string]$Operation,
+        [Parameter(Mandatory)] [hashtable]$Parameters,
+        [Parameter(Mandatory)] [scriptblock]$Action
+    )
+
+    Initialize-AlloyedDecorationPipeline
+
+    $tags = [System.Collections.Generic.Dictionary[string,string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $tags['operation'] = $Operation
+    $tags['enableTransparency'] = (Resolve-AlloyedTransparencyEnabled).ToString().ToLowerInvariant()
+
+    foreach ($key in $Parameters.Keys) {
+        $value = $Parameters[$key]
+        if ($null -eq $value) {
+            $tags[[string]$key] = '<null>'
+            continue
+        }
+
+        $tags[[string]$key] = [string]$value
+    }
+
+    $context = [Alloyed.DevOps.Multitool.Core.Decoration.Models.DecorationContext]::new($Operation, $tags)
+    $invoke = [System.Func[object]] { & $Action }
+    return $script:DecorationPipeline.Execute[object]($context, $invoke)
+}
+
 # ---------------------------------------------------------------------------
 # Provider.FileSystem wrappers
 # ---------------------------------------------------------------------------
 
-function Get-AlloyedChildItem { Get-ChildItem @PSBoundParameters }
-function Get-AlloyedItem       { Get-Item @PSBoundParameters }
-function Test-AlloyedPath      { Test-Path @PSBoundParameters }
+function Get-AlloyedChildItem { Invoke-AlloyedDecoratedCommand -Operation 'Get-ChildItem' -Parameters $PSBoundParameters -Action { Get-ChildItem @PSBoundParameters } }
+function Get-AlloyedItem       { Invoke-AlloyedDecoratedCommand -Operation 'Get-Item' -Parameters $PSBoundParameters -Action { Get-Item @PSBoundParameters } }
+function Test-AlloyedPath      { Invoke-AlloyedDecoratedCommand -Operation 'Test-Path' -Parameters $PSBoundParameters -Action { Test-Path @PSBoundParameters } }
 
 # ---------------------------------------------------------------------------
 # System.Utility wrappers
 # ---------------------------------------------------------------------------
 
-function Select-AlloyedString    { Select-String @PSBoundParameters }
-function ConvertTo-AlloyedJson   { ConvertTo-Json @PSBoundParameters }
-function ConvertFrom-AlloyedJson { ConvertFrom-Json @PSBoundParameters }
-function ConvertTo-AlloyedXml    { ConvertTo-Xml @PSBoundParameters }
-function Get-AlloyedRandom       { Get-Random @PSBoundParameters }
-function Measure-AlloyedObject   { Measure-Object @PSBoundParameters }
-function Sort-AlloyedObject      { Sort-Object @PSBoundParameters }
-function Group-AlloyedObject     { Group-Object @PSBoundParameters }
+function Select-AlloyedString    { Invoke-AlloyedDecoratedCommand -Operation 'Select-String' -Parameters $PSBoundParameters -Action { Select-String @PSBoundParameters } }
+function ConvertTo-AlloyedJson   { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-Json' -Parameters $PSBoundParameters -Action { ConvertTo-Json @PSBoundParameters } }
+function ConvertFrom-AlloyedJson { Invoke-AlloyedDecoratedCommand -Operation 'ConvertFrom-Json' -Parameters $PSBoundParameters -Action { ConvertFrom-Json @PSBoundParameters } }
+function ConvertTo-AlloyedXml    { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-Xml' -Parameters $PSBoundParameters -Action { ConvertTo-Xml @PSBoundParameters } }
+function Get-AlloyedRandom       { Invoke-AlloyedDecoratedCommand -Operation 'Get-Random' -Parameters $PSBoundParameters -Action { Get-Random @PSBoundParameters } }
+function Measure-AlloyedObject   { Invoke-AlloyedDecoratedCommand -Operation 'Measure-Object' -Parameters $PSBoundParameters -Action { Measure-Object @PSBoundParameters } }
+function Sort-AlloyedObject      { Invoke-AlloyedDecoratedCommand -Operation 'Sort-Object' -Parameters $PSBoundParameters -Action { Sort-Object @PSBoundParameters } }
+function Group-AlloyedObject     { Invoke-AlloyedDecoratedCommand -Operation 'Group-Object' -Parameters $PSBoundParameters -Action { Group-Object @PSBoundParameters } }
 
 # ---------------------------------------------------------------------------
 # System.Diagnostics wrappers
 # ---------------------------------------------------------------------------
 
-function Get-AlloyedProcess      { Get-Process @PSBoundParameters }
-function Start-AlloyedProcess    { Start-Process @PSBoundParameters }
-function Stop-AlloyedProcess     { Stop-Process @PSBoundParameters }
-function Wait-AlloyedProcess     { Wait-Process @PSBoundParameters }
-function Test-AlloyedConnection  { Test-Connection @PSBoundParameters }
-function Invoke-AlloyedCommand   { Invoke-Command @PSBoundParameters }
+function Get-AlloyedProcess      { Invoke-AlloyedDecoratedCommand -Operation 'Get-Process' -Parameters $PSBoundParameters -Action { Get-Process @PSBoundParameters } }
+function Start-AlloyedProcess    { Invoke-AlloyedDecoratedCommand -Operation 'Start-Process' -Parameters $PSBoundParameters -Action { Start-Process @PSBoundParameters } }
+function Stop-AlloyedProcess     { Invoke-AlloyedDecoratedCommand -Operation 'Stop-Process' -Parameters $PSBoundParameters -Action { Stop-Process @PSBoundParameters } }
+function Wait-AlloyedProcess     { Invoke-AlloyedDecoratedCommand -Operation 'Wait-Process' -Parameters $PSBoundParameters -Action { Wait-Process @PSBoundParameters } }
+function Test-AlloyedConnection  { Invoke-AlloyedDecoratedCommand -Operation 'Test-Connection' -Parameters $PSBoundParameters -Action { Test-Connection @PSBoundParameters } }
+function Invoke-AlloyedCommand   { Invoke-AlloyedDecoratedCommand -Operation 'Invoke-Command' -Parameters $PSBoundParameters -Action { Invoke-Command @PSBoundParameters } }
 
 # ---------------------------------------------------------------------------
 # System.Archive wrappers
 # ---------------------------------------------------------------------------
 
-function Compress-AlloyedArchive { Compress-Archive @PSBoundParameters }
-function Expand-AlloyedArchive   { Expand-Archive @PSBoundParameters }
+function Compress-AlloyedArchive { Invoke-AlloyedDecoratedCommand -Operation 'Compress-Archive' -Parameters $PSBoundParameters -Action { Compress-Archive @PSBoundParameters } }
+function Expand-AlloyedArchive   { Invoke-AlloyedDecoratedCommand -Operation 'Expand-Archive' -Parameters $PSBoundParameters -Action { Expand-Archive @PSBoundParameters } }
 
 # ---------------------------------------------------------------------------
 # System.Management wrappers
 # ---------------------------------------------------------------------------
 
-function Get-AlloyedService     { Get-Service @PSBoundParameters }
-function Start-AlloyedService   { Start-Service @PSBoundParameters }
-function Stop-AlloyedService    { Stop-Service @PSBoundParameters }
-function Restart-AlloyedService { Restart-Service @PSBoundParameters }
+function Get-AlloyedService     { Invoke-AlloyedDecoratedCommand -Operation 'Get-Service' -Parameters $PSBoundParameters -Action { Get-Service @PSBoundParameters } }
+function Start-AlloyedService   { Invoke-AlloyedDecoratedCommand -Operation 'Start-Service' -Parameters $PSBoundParameters -Action { Start-Service @PSBoundParameters } }
+function Stop-AlloyedService    { Invoke-AlloyedDecoratedCommand -Operation 'Stop-Service' -Parameters $PSBoundParameters -Action { Stop-Service @PSBoundParameters } }
+function Restart-AlloyedService { Invoke-AlloyedDecoratedCommand -Operation 'Restart-Service' -Parameters $PSBoundParameters -Action { Restart-Service @PSBoundParameters } }
 
 # ---------------------------------------------------------------------------
 # System.Security wrappers
 # ---------------------------------------------------------------------------
 
-function Get-AlloyedAcl                   { Get-Acl @PSBoundParameters }
-function Set-AlloyedAcl                   { Set-Acl @PSBoundParameters }
-function Get-AlloyedCredential            { Get-Credential @PSBoundParameters }
-function ConvertTo-AlloyedSecureString    { ConvertTo-SecureString @PSBoundParameters }
-function ConvertFrom-AlloyedSecureString  { ConvertFrom-SecureString @PSBoundParameters }
-function Get-AlloyedAuthenticodeSignature { Get-AuthenticodeSignature @PSBoundParameters }
-function Set-AlloyedAuthenticodeSignature { Set-AuthenticodeSignature @PSBoundParameters }
-function New-AlloyedSelfSignedCertificate { New-SelfSignedCertificate @PSBoundParameters }
-function Get-AlloyedPfxCertificate        { Get-PfxCertificate @PSBoundParameters }
-function Export-AlloyedPfxCertificate     { Export-PfxCertificate @PSBoundParameters }
+function Get-AlloyedAcl                   { Invoke-AlloyedDecoratedCommand -Operation 'Get-Acl' -Parameters $PSBoundParameters -Action { Get-Acl @PSBoundParameters } }
+function Set-AlloyedAcl                   { Invoke-AlloyedDecoratedCommand -Operation 'Set-Acl' -Parameters $PSBoundParameters -Action { Set-Acl @PSBoundParameters } }
+function Get-AlloyedCredential            { Invoke-AlloyedDecoratedCommand -Operation 'Get-Credential' -Parameters $PSBoundParameters -Action { Get-Credential @PSBoundParameters } }
+function ConvertTo-AlloyedSecureString    { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-SecureString' -Parameters $PSBoundParameters -Action { ConvertTo-SecureString @PSBoundParameters } }
+function ConvertFrom-AlloyedSecureString  { Invoke-AlloyedDecoratedCommand -Operation 'ConvertFrom-SecureString' -Parameters $PSBoundParameters -Action { ConvertFrom-SecureString @PSBoundParameters } }
+function Get-AlloyedAuthenticodeSignature { Invoke-AlloyedDecoratedCommand -Operation 'Get-AuthenticodeSignature' -Parameters $PSBoundParameters -Action { Get-AuthenticodeSignature @PSBoundParameters } }
+function Set-AlloyedAuthenticodeSignature { Invoke-AlloyedDecoratedCommand -Operation 'Set-AuthenticodeSignature' -Parameters $PSBoundParameters -Action { Set-AuthenticodeSignature @PSBoundParameters } }
+function New-AlloyedSelfSignedCertificate { Invoke-AlloyedDecoratedCommand -Operation 'New-SelfSignedCertificate' -Parameters $PSBoundParameters -Action { New-SelfSignedCertificate @PSBoundParameters } }
+function Get-AlloyedPfxCertificate        { Invoke-AlloyedDecoratedCommand -Operation 'Get-PfxCertificate' -Parameters $PSBoundParameters -Action { Get-PfxCertificate @PSBoundParameters } }
+function Export-AlloyedPfxCertificate     { Invoke-AlloyedDecoratedCommand -Operation 'Export-PfxCertificate' -Parameters $PSBoundParameters -Action { Export-PfxCertificate @PSBoundParameters } }
 
 # ---------------------------------------------------------------------------
 # System.Host wrappers
 # ---------------------------------------------------------------------------
 
-function Write-AlloyedHost     { Write-Host @PSBoundParameters }
-function Read-AlloyedHost      { Read-Host @PSBoundParameters }
-function Write-AlloyedProgress { Write-Progress @PSBoundParameters }
-function Clear-AlloyedHost     { Clear-Host }
+function Write-AlloyedHost     { Invoke-AlloyedDecoratedCommand -Operation 'Write-Host' -Parameters $PSBoundParameters -Action { Write-Host @PSBoundParameters } }
+function Read-AlloyedHost      { Invoke-AlloyedDecoratedCommand -Operation 'Read-Host' -Parameters $PSBoundParameters -Action { Read-Host @PSBoundParameters } }
+function Write-AlloyedProgress { Invoke-AlloyedDecoratedCommand -Operation 'Write-Progress' -Parameters $PSBoundParameters -Action { Write-Progress @PSBoundParameters } }
+function Clear-AlloyedHost     { Invoke-AlloyedDecoratedCommand -Operation 'Clear-Host' -Parameters @{} -Action { Clear-Host } }
 
 # ---------------------------------------------------------------------------
 # Pipeline cmdlets
@@ -300,5 +362,31 @@ function Get-AlloyedSessionModeStatus {
         Enabled = $script:SessionModeEnabled
         ActiveAliasCount = @($script:SessionModeAliases).Count
         ActiveAliases = @($script:SessionModeAliases)
+    }
+}
+
+function Enable-AlloyedTransparencyMode {
+    [CmdletBinding()]
+    param()
+
+    $script:TransparencyModeOverride = $true
+    Get-AlloyedTransparencyModeStatus
+}
+
+function Disable-AlloyedTransparencyMode {
+    [CmdletBinding()]
+    param()
+
+    $script:TransparencyModeOverride = $false
+    Get-AlloyedTransparencyModeStatus
+}
+
+function Get-AlloyedTransparencyModeStatus {
+    [CmdletBinding()]
+    param()
+
+    [pscustomobject]@{
+        Enabled = Resolve-AlloyedTransparencyEnabled
+        Override = if ($null -eq $script:TransparencyModeOverride) { '<config>' } else { [bool]$script:TransparencyModeOverride }
     }
 }
