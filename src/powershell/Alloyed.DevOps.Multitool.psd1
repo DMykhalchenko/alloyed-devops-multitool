@@ -24,6 +24,12 @@
         'Get-AlloyedChildItem',
         'Get-AlloyedItem',
         'Test-AlloyedPath',
+        'Copy-AlloyedItem',
+        'Move-AlloyedItem',
+        'Remove-AlloyedItem',
+        'New-AlloyedItem',
+        'Get-AlloyedContent',
+        'Set-AlloyedContent',
         # System.Utility wrappers
         'Select-AlloyedString',
         'ConvertTo-AlloyedJson',

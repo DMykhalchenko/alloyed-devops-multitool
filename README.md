@@ -14,9 +14,10 @@ Multitool transforms PowerShell scripts into wrapper-based modules and routes su
 ## Current baseline (verified 2026-04-27)
 
 - `pwsh -NoProfile -File ./dev.ps1 -Stage ci` passes locally.
-- Unit tests: `40` passed.
-- Integration tests: `8` passed.
+- Unit tests: `46` passed.
+- Integration tests: `13` passed.
 - End-to-end smoke: passed.
+- `Provider.FileSystem` ports include `Get/Copy/Move/Remove/New-Item` and `Get/Set-Content` wrappers.
 
 ## Quick start
 

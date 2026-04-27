@@ -204,6 +204,34 @@ public class TextCommandTransformerTests
     }
 
     [Fact]
+    public void Transform_Should_MatchFileSystemGroupGoldenFixtureOutput()
+    {
+        var transformer = new TextCommandTransformer();
+        var fixtureDir = Path.Combine(AppContext.BaseDirectory, "Fixtures", "Transform");
+        var inputPath = Path.Combine(fixtureDir, "filesystem-golden-input.ps1");
+        var expectedPath = Path.Combine(fixtureDir, "filesystem-golden-expected.ps1");
+
+        var source = File.ReadAllText(inputPath);
+        var expected = File.ReadAllText(expectedPath);
+
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Copy-Item"] = "Copy-AlloyedItem",
+            ["Move-Item"] = "Move-AlloyedItem",
+            ["Remove-Item"] = "Remove-AlloyedItem",
+            ["New-Item"] = "New-AlloyedItem",
+            ["Get-Content"] = "Get-AlloyedContent",
+            ["Set-Content"] = "Set-AlloyedContent",
+        };
+
+        var output = transformer.Transform(source, map);
+
+        output.Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Should()
+            .Be(expected.Replace("\r\n", "\n", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Transform_Should_MatchUtilityGroupGoldenFixtureOutput()
     {
         var transformer = new TextCommandTransformer();

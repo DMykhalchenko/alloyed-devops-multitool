@@ -33,6 +33,60 @@ public class InMemoryWrapperCatalogTests
     }
 
     [Fact]
+    public void Resolve_Should_MapFileSystemGroupCommands()
+    {
+        var catalog = new InMemoryWrapperCatalog();
+
+        var result = catalog.Resolve(new[]
+        {
+            "Get-ChildItem", "Get-Item", "Test-Path",
+            "Copy-Item", "Move-Item", "Remove-Item",
+            "New-Item", "Get-Content", "Set-Content",
+        });
+
+        result.Replacements["Get-ChildItem"].Should().Be("Get-AlloyedChildItem");
+        result.Replacements["Get-Item"].Should().Be("Get-AlloyedItem");
+        result.Replacements["Test-Path"].Should().Be("Test-AlloyedPath");
+        result.Replacements["Copy-Item"].Should().Be("Copy-AlloyedItem");
+        result.Replacements["Move-Item"].Should().Be("Move-AlloyedItem");
+        result.Replacements["Remove-Item"].Should().Be("Remove-AlloyedItem");
+        result.Replacements["New-Item"].Should().Be("New-AlloyedItem");
+        result.Replacements["Get-Content"].Should().Be("Get-AlloyedContent");
+        result.Replacements["Set-Content"].Should().Be("Set-AlloyedContent");
+        result.MissingCommands.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Resolve_Should_MapFileSystemGroupAliases()
+    {
+        var catalog = new InMemoryWrapperCatalog();
+
+        var result = catalog.Resolve(new[]
+        {
+            "gci", "gi", "tp",
+            "cp", "copy",
+            "mi", "move",
+            "rm", "ri", "del",
+            "ni", "gc", "sc",
+        });
+
+        result.Replacements["gci"].Should().Be("Get-AlloyedChildItem");
+        result.Replacements["gi"].Should().Be("Get-AlloyedItem");
+        result.Replacements["tp"].Should().Be("Test-AlloyedPath");
+        result.Replacements["cp"].Should().Be("Copy-AlloyedItem");
+        result.Replacements["copy"].Should().Be("Copy-AlloyedItem");
+        result.Replacements["mi"].Should().Be("Move-AlloyedItem");
+        result.Replacements["move"].Should().Be("Move-AlloyedItem");
+        result.Replacements["rm"].Should().Be("Remove-AlloyedItem");
+        result.Replacements["ri"].Should().Be("Remove-AlloyedItem");
+        result.Replacements["del"].Should().Be("Remove-AlloyedItem");
+        result.Replacements["ni"].Should().Be("New-AlloyedItem");
+        result.Replacements["gc"].Should().Be("Get-AlloyedContent");
+        result.Replacements["sc"].Should().Be("Set-AlloyedContent");
+        result.MissingCommands.Should().BeEmpty();
+    }
+
+    [Fact]
     public void Resolve_Should_MapUtilityGroupCommands()
     {
         var catalog = new InMemoryWrapperCatalog();

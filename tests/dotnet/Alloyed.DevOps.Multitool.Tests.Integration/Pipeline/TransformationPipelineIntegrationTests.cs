@@ -85,6 +85,53 @@ public class TransformationPipelineIntegrationTests
     }
 
     [Fact]
+    public void Execute_Should_ReplaceFileSystemPorts()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "alloyed-integration-tests", Guid.NewGuid().ToString("N"));
+        var scriptPath = Path.Combine(root, "input.ps1");
+        var outputPath = Path.Combine(root, "out");
+
+        Directory.CreateDirectory(root);
+        File.WriteAllText(scriptPath, """
+            Copy-Item -Path ./a.txt -Destination ./b.txt
+            Move-Item -Path ./b.txt -Destination ./c.txt
+            Remove-Item -Path ./c.txt -Force
+            New-Item -Path ./new.txt -ItemType File
+            Get-Content -Path ./new.txt
+            Set-Content -Path ./new.txt -Value "hello"
+            """);
+
+        try
+        {
+            var pipeline = PipelineBootstrap.CreateDefault();
+            var result = pipeline.Execute(new PipelineRequest(scriptPath, "FileSystemIntegrationModule", outputPath, true));
+
+            result.Success.Should().BeTrue();
+            result.CommandsFound.Should().Be(6);
+            result.CommandsReplaced.Should().Be(6);
+            result.MissingCommands.Should().BeEmpty();
+
+            var generatedPsm1 = Path.Combine(result.ModulePath, "FileSystemIntegrationModule.psm1");
+            File.Exists(generatedPsm1).Should().BeTrue();
+
+            var content = File.ReadAllText(generatedPsm1);
+            content.Should().Contain("Copy-AlloyedItem");
+            content.Should().Contain("Move-AlloyedItem");
+            content.Should().Contain("Remove-AlloyedItem");
+            content.Should().Contain("New-AlloyedItem");
+            content.Should().Contain("Get-AlloyedContent");
+            content.Should().Contain("Set-AlloyedContent");
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public void Execute_Should_RefuseOverwrite_WhenForceIsFalse()
     {
         var root = Path.Combine(Path.GetTempPath(), "alloyed-integration-tests", Guid.NewGuid().ToString("N"));
