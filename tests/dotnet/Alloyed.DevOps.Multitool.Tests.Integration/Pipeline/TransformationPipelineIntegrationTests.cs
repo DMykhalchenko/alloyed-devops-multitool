@@ -132,6 +132,55 @@ public class TransformationPipelineIntegrationTests
     }
 
     [Fact]
+    public void Execute_Should_ReplacePathAndLocationPorts()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "alloyed-integration-tests", Guid.NewGuid().ToString("N"));
+        var scriptPath = Path.Combine(root, "input.ps1");
+        var outputPath = Path.Combine(root, "out");
+
+        Directory.CreateDirectory(root);
+        File.WriteAllText(scriptPath, """
+            Get-Location
+            Set-Location -Path .
+            Push-Location -Path .
+            Pop-Location
+            Join-Path -Path a -ChildPath b
+            Split-Path -Path a\b\c.txt -Parent
+            Resolve-Path -Path .
+            """);
+
+        try
+        {
+            var pipeline = PipelineBootstrap.CreateDefault();
+            var result = pipeline.Execute(new PipelineRequest(scriptPath, "PathLocationIntegrationModule", outputPath, true));
+
+            result.Success.Should().BeTrue();
+            result.CommandsFound.Should().Be(7);
+            result.CommandsReplaced.Should().Be(7);
+            result.MissingCommands.Should().BeEmpty();
+
+            var generatedPsm1 = Path.Combine(result.ModulePath, "PathLocationIntegrationModule.psm1");
+            File.Exists(generatedPsm1).Should().BeTrue();
+
+            var content = File.ReadAllText(generatedPsm1);
+            content.Should().Contain("Get-AlloyedLocation");
+            content.Should().Contain("Set-AlloyedLocation");
+            content.Should().Contain("Push-AlloyedLocation");
+            content.Should().Contain("Pop-AlloyedLocation");
+            content.Should().Contain("Join-AlloyedPath");
+            content.Should().Contain("Split-AlloyedPath");
+            content.Should().Contain("Resolve-AlloyedPath");
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public void Execute_Should_RefuseOverwrite_WhenForceIsFalse()
     {
         var root = Path.Combine(Path.GetTempPath(), "alloyed-integration-tests", Guid.NewGuid().ToString("N"));

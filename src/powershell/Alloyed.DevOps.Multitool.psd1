@@ -30,6 +30,13 @@
         'New-AlloyedItem',
         'Get-AlloyedContent',
         'Set-AlloyedContent',
+        'Get-AlloyedLocation',
+        'Set-AlloyedLocation',
+        'Push-AlloyedLocation',
+        'Pop-AlloyedLocation',
+        'Join-AlloyedPath',
+        'Split-AlloyedPath',
+        'Resolve-AlloyedPath',
         # System.Utility wrappers
         'Select-AlloyedString',
         'ConvertTo-AlloyedJson',

@@ -42,6 +42,8 @@ public class InMemoryWrapperCatalogTests
             "Get-ChildItem", "Get-Item", "Test-Path",
             "Copy-Item", "Move-Item", "Remove-Item",
             "New-Item", "Get-Content", "Set-Content",
+            "Get-Location", "Set-Location", "Push-Location",
+            "Pop-Location", "Join-Path", "Split-Path", "Resolve-Path",
         });
 
         result.Replacements["Get-ChildItem"].Should().Be("Get-AlloyedChildItem");
@@ -53,6 +55,13 @@ public class InMemoryWrapperCatalogTests
         result.Replacements["New-Item"].Should().Be("New-AlloyedItem");
         result.Replacements["Get-Content"].Should().Be("Get-AlloyedContent");
         result.Replacements["Set-Content"].Should().Be("Set-AlloyedContent");
+        result.Replacements["Get-Location"].Should().Be("Get-AlloyedLocation");
+        result.Replacements["Set-Location"].Should().Be("Set-AlloyedLocation");
+        result.Replacements["Push-Location"].Should().Be("Push-AlloyedLocation");
+        result.Replacements["Pop-Location"].Should().Be("Pop-AlloyedLocation");
+        result.Replacements["Join-Path"].Should().Be("Join-AlloyedPath");
+        result.Replacements["Split-Path"].Should().Be("Split-AlloyedPath");
+        result.Replacements["Resolve-Path"].Should().Be("Resolve-AlloyedPath");
         result.MissingCommands.Should().BeEmpty();
     }
 
@@ -68,6 +77,7 @@ public class InMemoryWrapperCatalogTests
             "mi", "move",
             "rm", "ri", "del",
             "ni", "gc", "sc",
+            "gl", "pwd", "cd", "chdir", "sl", "pushd", "popd",
         });
 
         result.Replacements["gci"].Should().Be("Get-AlloyedChildItem");
@@ -83,6 +93,13 @@ public class InMemoryWrapperCatalogTests
         result.Replacements["ni"].Should().Be("New-AlloyedItem");
         result.Replacements["gc"].Should().Be("Get-AlloyedContent");
         result.Replacements["sc"].Should().Be("Set-AlloyedContent");
+        result.Replacements["gl"].Should().Be("Get-AlloyedLocation");
+        result.Replacements["pwd"].Should().Be("Get-AlloyedLocation");
+        result.Replacements["cd"].Should().Be("Set-AlloyedLocation");
+        result.Replacements["chdir"].Should().Be("Set-AlloyedLocation");
+        result.Replacements["sl"].Should().Be("Set-AlloyedLocation");
+        result.Replacements["pushd"].Should().Be("Push-AlloyedLocation");
+        result.Replacements["popd"].Should().Be("Pop-AlloyedLocation");
         result.MissingCommands.Should().BeEmpty();
     }
 

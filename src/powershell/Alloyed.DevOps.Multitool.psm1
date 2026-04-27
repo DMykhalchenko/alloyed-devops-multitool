@@ -82,8 +82,9 @@ function Invoke-AlloyedDecoratedCommand {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)] [string]$Operation,
-        [Parameter(Mandatory)] [hashtable]$Parameters,
-        [Parameter(Mandatory)] [scriptblock]$Action
+        [Parameter(Mandatory)] [scriptblock]$Action,
+        [hashtable]$Parameters = @{},
+        [object[]]$Arguments = @()
     )
 
     Initialize-AlloyedDecorationPipeline
@@ -103,7 +104,7 @@ function Invoke-AlloyedDecoratedCommand {
     }
 
     $context = [Alloyed.DevOps.Multitool.Core.Decoration.Models.DecorationContext]::new($Operation, $tags)
-    $invoke = [System.Func[object]] { & $Action }
+    $invoke = [System.Func[object]] { & $Action @Arguments }
     return $script:DecorationPipeline.Execute[object]($context, $invoke)
 }
 
@@ -111,78 +112,85 @@ function Invoke-AlloyedDecoratedCommand {
 # Provider.FileSystem wrappers
 # ---------------------------------------------------------------------------
 
-function Get-AlloyedChildItem { Invoke-AlloyedDecoratedCommand -Operation 'Get-ChildItem' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Get-ChildItem @PSBoundParameters } }
-function Get-AlloyedItem       { Invoke-AlloyedDecoratedCommand -Operation 'Get-Item' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Get-Item @PSBoundParameters } }
-function Test-AlloyedPath      { Invoke-AlloyedDecoratedCommand -Operation 'Test-Path' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Test-Path @PSBoundParameters } }
-function Copy-AlloyedItem      { Invoke-AlloyedDecoratedCommand -Operation 'Copy-Item' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Copy-Item @PSBoundParameters } }
-function Move-AlloyedItem      { Invoke-AlloyedDecoratedCommand -Operation 'Move-Item' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Move-Item @PSBoundParameters } }
-function Remove-AlloyedItem    { Invoke-AlloyedDecoratedCommand -Operation 'Remove-Item' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Remove-Item @PSBoundParameters } }
-function New-AlloyedItem       { Invoke-AlloyedDecoratedCommand -Operation 'New-Item' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\New-Item @PSBoundParameters } }
-function Get-AlloyedContent    { Invoke-AlloyedDecoratedCommand -Operation 'Get-Content' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Get-Content @PSBoundParameters } }
-function Set-AlloyedContent    { Invoke-AlloyedDecoratedCommand -Operation 'Set-Content' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Set-Content @PSBoundParameters } }
+function Get-AlloyedChildItem { Invoke-AlloyedDecoratedCommand -Operation 'Get-ChildItem' -Arguments $args -Action {Microsoft.PowerShell.Management\Get-ChildItem @args } }
+function Get-AlloyedItem       { Invoke-AlloyedDecoratedCommand -Operation 'Get-Item' -Arguments $args -Action {Microsoft.PowerShell.Management\Get-Item @args } }
+function Test-AlloyedPath      { Invoke-AlloyedDecoratedCommand -Operation 'Test-Path' -Arguments $args -Action {Microsoft.PowerShell.Management\Test-Path @args } }
+function Copy-AlloyedItem      { Invoke-AlloyedDecoratedCommand -Operation 'Copy-Item' -Arguments $args -Action {Microsoft.PowerShell.Management\Copy-Item @args } }
+function Move-AlloyedItem      { Invoke-AlloyedDecoratedCommand -Operation 'Move-Item' -Arguments $args -Action {Microsoft.PowerShell.Management\Move-Item @args } }
+function Remove-AlloyedItem    { Invoke-AlloyedDecoratedCommand -Operation 'Remove-Item' -Arguments $args -Action {Microsoft.PowerShell.Management\Remove-Item @args } }
+function New-AlloyedItem       { Invoke-AlloyedDecoratedCommand -Operation 'New-Item' -Arguments $args -Action {Microsoft.PowerShell.Management\New-Item @args } }
+function Get-AlloyedContent    { Invoke-AlloyedDecoratedCommand -Operation 'Get-Content' -Arguments $args -Action {Microsoft.PowerShell.Management\Get-Content @args } }
+function Set-AlloyedContent    { Invoke-AlloyedDecoratedCommand -Operation 'Set-Content' -Arguments $args -Action {Microsoft.PowerShell.Management\Set-Content @args } }
+function Get-AlloyedLocation   { Invoke-AlloyedDecoratedCommand -Operation 'Get-Location' -Arguments $args -Action {Microsoft.PowerShell.Management\Get-Location @args } }
+function Set-AlloyedLocation   { Invoke-AlloyedDecoratedCommand -Operation 'Set-Location' -Arguments $args -Action {Microsoft.PowerShell.Management\Set-Location @args } }
+function Push-AlloyedLocation  { Invoke-AlloyedDecoratedCommand -Operation 'Push-Location' -Arguments $args -Action {Microsoft.PowerShell.Management\Push-Location @args } }
+function Pop-AlloyedLocation   { Invoke-AlloyedDecoratedCommand -Operation 'Pop-Location' -Arguments $args -Action {Microsoft.PowerShell.Management\Pop-Location @args } }
+function Join-AlloyedPath      { Invoke-AlloyedDecoratedCommand -Operation 'Join-Path' -Arguments $args -Action {Microsoft.PowerShell.Management\Join-Path @args } }
+function Split-AlloyedPath     { Invoke-AlloyedDecoratedCommand -Operation 'Split-Path' -Arguments $args -Action {Microsoft.PowerShell.Management\Split-Path @args } }
+function Resolve-AlloyedPath   { Invoke-AlloyedDecoratedCommand -Operation 'Resolve-Path' -Arguments $args -Action {Microsoft.PowerShell.Management\Resolve-Path @args } }
 
 # ---------------------------------------------------------------------------
 # System.Utility wrappers
 # ---------------------------------------------------------------------------
 
-function Select-AlloyedString    { Invoke-AlloyedDecoratedCommand -Operation 'Select-String' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Utility\Select-String @PSBoundParameters } }
-function ConvertTo-AlloyedJson   { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-Json' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Utility\ConvertTo-Json @PSBoundParameters } }
-function ConvertFrom-AlloyedJson { Invoke-AlloyedDecoratedCommand -Operation 'ConvertFrom-Json' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Utility\ConvertFrom-Json @PSBoundParameters } }
-function ConvertTo-AlloyedXml    { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-Xml' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Utility\ConvertTo-Xml @PSBoundParameters } }
-function Get-AlloyedRandom       { Invoke-AlloyedDecoratedCommand -Operation 'Get-Random' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Utility\Get-Random @PSBoundParameters } }
-function Measure-AlloyedObject   { Invoke-AlloyedDecoratedCommand -Operation 'Measure-Object' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Utility\Measure-Object @PSBoundParameters } }
-function Sort-AlloyedObject      { Invoke-AlloyedDecoratedCommand -Operation 'Sort-Object' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Utility\Sort-Object @PSBoundParameters } }
-function Group-AlloyedObject     { Invoke-AlloyedDecoratedCommand -Operation 'Group-Object' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Utility\Group-Object @PSBoundParameters } }
+function Select-AlloyedString    { Invoke-AlloyedDecoratedCommand -Operation 'Select-String' -Arguments $args -Action {Microsoft.PowerShell.Utility\Select-String @args } }
+function ConvertTo-AlloyedJson   { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-Json' -Arguments $args -Action {Microsoft.PowerShell.Utility\ConvertTo-Json @args } }
+function ConvertFrom-AlloyedJson { Invoke-AlloyedDecoratedCommand -Operation 'ConvertFrom-Json' -Arguments $args -Action {Microsoft.PowerShell.Utility\ConvertFrom-Json @args } }
+function ConvertTo-AlloyedXml    { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-Xml' -Arguments $args -Action {Microsoft.PowerShell.Utility\ConvertTo-Xml @args } }
+function Get-AlloyedRandom       { Invoke-AlloyedDecoratedCommand -Operation 'Get-Random' -Arguments $args -Action {Microsoft.PowerShell.Utility\Get-Random @args } }
+function Measure-AlloyedObject   { Invoke-AlloyedDecoratedCommand -Operation 'Measure-Object' -Arguments $args -Action {Microsoft.PowerShell.Utility\Measure-Object @args } }
+function Sort-AlloyedObject      { Invoke-AlloyedDecoratedCommand -Operation 'Sort-Object' -Arguments $args -Action {Microsoft.PowerShell.Utility\Sort-Object @args } }
+function Group-AlloyedObject     { Invoke-AlloyedDecoratedCommand -Operation 'Group-Object' -Arguments $args -Action {Microsoft.PowerShell.Utility\Group-Object @args } }
 
 # ---------------------------------------------------------------------------
 # System.Diagnostics wrappers
 # ---------------------------------------------------------------------------
 
-function Get-AlloyedProcess      { Invoke-AlloyedDecoratedCommand -Operation 'Get-Process' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Get-Process @PSBoundParameters } }
-function Start-AlloyedProcess    { Invoke-AlloyedDecoratedCommand -Operation 'Start-Process' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Start-Process @PSBoundParameters } }
-function Stop-AlloyedProcess     { Invoke-AlloyedDecoratedCommand -Operation 'Stop-Process' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Stop-Process @PSBoundParameters } }
-function Wait-AlloyedProcess     { Invoke-AlloyedDecoratedCommand -Operation 'Wait-Process' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Wait-Process @PSBoundParameters } }
-function Test-AlloyedConnection  { Invoke-AlloyedDecoratedCommand -Operation 'Test-Connection' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Test-Connection @PSBoundParameters } }
-function Invoke-AlloyedCommand   { Invoke-AlloyedDecoratedCommand -Operation 'Invoke-Command' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Core\Invoke-Command @PSBoundParameters } }
+function Get-AlloyedProcess      { Invoke-AlloyedDecoratedCommand -Operation 'Get-Process' -Arguments $args -Action {Microsoft.PowerShell.Management\Get-Process @args } }
+function Start-AlloyedProcess    { Invoke-AlloyedDecoratedCommand -Operation 'Start-Process' -Arguments $args -Action {Microsoft.PowerShell.Management\Start-Process @args } }
+function Stop-AlloyedProcess     { Invoke-AlloyedDecoratedCommand -Operation 'Stop-Process' -Arguments $args -Action {Microsoft.PowerShell.Management\Stop-Process @args } }
+function Wait-AlloyedProcess     { Invoke-AlloyedDecoratedCommand -Operation 'Wait-Process' -Arguments $args -Action {Microsoft.PowerShell.Management\Wait-Process @args } }
+function Test-AlloyedConnection  { Invoke-AlloyedDecoratedCommand -Operation 'Test-Connection' -Arguments $args -Action {Microsoft.PowerShell.Management\Test-Connection @args } }
+function Invoke-AlloyedCommand   { Invoke-AlloyedDecoratedCommand -Operation 'Invoke-Command' -Arguments $args -Action {Microsoft.PowerShell.Core\Invoke-Command @args } }
 
 # ---------------------------------------------------------------------------
 # System.Archive wrappers
 # ---------------------------------------------------------------------------
 
-function Compress-AlloyedArchive { Invoke-AlloyedDecoratedCommand -Operation 'Compress-Archive' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Archive\Compress-Archive @PSBoundParameters } }
-function Expand-AlloyedArchive   { Invoke-AlloyedDecoratedCommand -Operation 'Expand-Archive' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Archive\Expand-Archive @PSBoundParameters } }
+function Compress-AlloyedArchive { Invoke-AlloyedDecoratedCommand -Operation 'Compress-Archive' -Arguments $args -Action {Microsoft.PowerShell.Archive\Compress-Archive @args } }
+function Expand-AlloyedArchive   { Invoke-AlloyedDecoratedCommand -Operation 'Expand-Archive' -Arguments $args -Action {Microsoft.PowerShell.Archive\Expand-Archive @args } }
 
 # ---------------------------------------------------------------------------
 # System.Management wrappers
 # ---------------------------------------------------------------------------
 
-function Get-AlloyedService     { Invoke-AlloyedDecoratedCommand -Operation 'Get-Service' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Get-Service @PSBoundParameters } }
-function Start-AlloyedService   { Invoke-AlloyedDecoratedCommand -Operation 'Start-Service' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Start-Service @PSBoundParameters } }
-function Stop-AlloyedService    { Invoke-AlloyedDecoratedCommand -Operation 'Stop-Service' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Stop-Service @PSBoundParameters } }
-function Restart-AlloyedService { Invoke-AlloyedDecoratedCommand -Operation 'Restart-Service' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Management\Restart-Service @PSBoundParameters } }
+function Get-AlloyedService     { Invoke-AlloyedDecoratedCommand -Operation 'Get-Service' -Arguments $args -Action {Microsoft.PowerShell.Management\Get-Service @args } }
+function Start-AlloyedService   { Invoke-AlloyedDecoratedCommand -Operation 'Start-Service' -Arguments $args -Action {Microsoft.PowerShell.Management\Start-Service @args } }
+function Stop-AlloyedService    { Invoke-AlloyedDecoratedCommand -Operation 'Stop-Service' -Arguments $args -Action {Microsoft.PowerShell.Management\Stop-Service @args } }
+function Restart-AlloyedService { Invoke-AlloyedDecoratedCommand -Operation 'Restart-Service' -Arguments $args -Action {Microsoft.PowerShell.Management\Restart-Service @args } }
 
 # ---------------------------------------------------------------------------
 # System.Security wrappers
 # ---------------------------------------------------------------------------
 
-function Get-AlloyedAcl                   { Invoke-AlloyedDecoratedCommand -Operation 'Get-Acl' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Security\Get-Acl @PSBoundParameters } }
-function Set-AlloyedAcl                   { Invoke-AlloyedDecoratedCommand -Operation 'Set-Acl' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Security\Set-Acl @PSBoundParameters } }
-function Get-AlloyedCredential            { Invoke-AlloyedDecoratedCommand -Operation 'Get-Credential' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Security\Get-Credential @PSBoundParameters } }
-function ConvertTo-AlloyedSecureString    { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-SecureString' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Security\ConvertTo-SecureString @PSBoundParameters } }
-function ConvertFrom-AlloyedSecureString  { Invoke-AlloyedDecoratedCommand -Operation 'ConvertFrom-SecureString' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Security\ConvertFrom-SecureString @PSBoundParameters } }
-function Get-AlloyedAuthenticodeSignature { Invoke-AlloyedDecoratedCommand -Operation 'Get-AuthenticodeSignature' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Security\Get-AuthenticodeSignature @PSBoundParameters } }
-function Set-AlloyedAuthenticodeSignature { Invoke-AlloyedDecoratedCommand -Operation 'Set-AuthenticodeSignature' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Security\Set-AuthenticodeSignature @PSBoundParameters } }
-function New-AlloyedSelfSignedCertificate { Invoke-AlloyedDecoratedCommand -Operation 'New-SelfSignedCertificate' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Security\New-SelfSignedCertificate @PSBoundParameters } }
-function Get-AlloyedPfxCertificate        { Invoke-AlloyedDecoratedCommand -Operation 'Get-PfxCertificate' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Security\Get-PfxCertificate @PSBoundParameters } }
-function Export-AlloyedPfxCertificate     { Invoke-AlloyedDecoratedCommand -Operation 'Export-PfxCertificate' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Security\Export-PfxCertificate @PSBoundParameters } }
+function Get-AlloyedAcl                   { Invoke-AlloyedDecoratedCommand -Operation 'Get-Acl' -Arguments $args -Action {Microsoft.PowerShell.Security\Get-Acl @args } }
+function Set-AlloyedAcl                   { Invoke-AlloyedDecoratedCommand -Operation 'Set-Acl' -Arguments $args -Action {Microsoft.PowerShell.Security\Set-Acl @args } }
+function Get-AlloyedCredential            { Invoke-AlloyedDecoratedCommand -Operation 'Get-Credential' -Arguments $args -Action {Microsoft.PowerShell.Security\Get-Credential @args } }
+function ConvertTo-AlloyedSecureString    { Invoke-AlloyedDecoratedCommand -Operation 'ConvertTo-SecureString' -Arguments $args -Action {Microsoft.PowerShell.Security\ConvertTo-SecureString @args } }
+function ConvertFrom-AlloyedSecureString  { Invoke-AlloyedDecoratedCommand -Operation 'ConvertFrom-SecureString' -Arguments $args -Action {Microsoft.PowerShell.Security\ConvertFrom-SecureString @args } }
+function Get-AlloyedAuthenticodeSignature { Invoke-AlloyedDecoratedCommand -Operation 'Get-AuthenticodeSignature' -Arguments $args -Action {Microsoft.PowerShell.Security\Get-AuthenticodeSignature @args } }
+function Set-AlloyedAuthenticodeSignature { Invoke-AlloyedDecoratedCommand -Operation 'Set-AuthenticodeSignature' -Arguments $args -Action {Microsoft.PowerShell.Security\Set-AuthenticodeSignature @args } }
+function New-AlloyedSelfSignedCertificate { Invoke-AlloyedDecoratedCommand -Operation 'New-SelfSignedCertificate' -Arguments $args -Action {Microsoft.PowerShell.Security\New-SelfSignedCertificate @args } }
+function Get-AlloyedPfxCertificate        { Invoke-AlloyedDecoratedCommand -Operation 'Get-PfxCertificate' -Arguments $args -Action {Microsoft.PowerShell.Security\Get-PfxCertificate @args } }
+function Export-AlloyedPfxCertificate     { Invoke-AlloyedDecoratedCommand -Operation 'Export-PfxCertificate' -Arguments $args -Action {Microsoft.PowerShell.Security\Export-PfxCertificate @args } }
 
 # ---------------------------------------------------------------------------
 # System.Host wrappers
 # ---------------------------------------------------------------------------
 
-function Write-AlloyedHost     { Invoke-AlloyedDecoratedCommand -Operation 'Write-Host' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Utility\Write-Host @PSBoundParameters } }
-function Read-AlloyedHost      { Invoke-AlloyedDecoratedCommand -Operation 'Read-Host' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Utility\Read-Host @PSBoundParameters } }
-function Write-AlloyedProgress { Invoke-AlloyedDecoratedCommand -Operation 'Write-Progress' -Parameters $PSBoundParameters -Action { Microsoft.PowerShell.Utility\Write-Progress @PSBoundParameters } }
+function Write-AlloyedHost     { Invoke-AlloyedDecoratedCommand -Operation 'Write-Host' -Arguments $args -Action {Microsoft.PowerShell.Utility\Write-Host @args } }
+function Read-AlloyedHost      { Invoke-AlloyedDecoratedCommand -Operation 'Read-Host' -Arguments $args -Action {Microsoft.PowerShell.Utility\Read-Host @args } }
+function Write-AlloyedProgress { Invoke-AlloyedDecoratedCommand -Operation 'Write-Progress' -Arguments $args -Action {Microsoft.PowerShell.Utility\Write-Progress @args } }
 function Clear-AlloyedHost     { Invoke-AlloyedDecoratedCommand -Operation 'Clear-Host' -Parameters @{} -Action { Microsoft.PowerShell.Core\Clear-Host } }
 
 # ---------------------------------------------------------------------------
