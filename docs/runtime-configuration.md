@@ -17,6 +17,10 @@ Migration compatibility prefix (also supported):
 
 - `TAF__Section__Subsection__Key`
 
+Console output mode uses a separate flat key (see [Console reporter mode](#console-reporter-mode)):
+
+- `ALLOYED_CONSOLE_OUTPUT_MODE`
+
 Examples:
 
 ```powershell
@@ -27,6 +31,7 @@ $env:ALLOYED__MOCKING__ENABLED = "true"
 $env:ALLOYED__MOCKING__MODE = "InMemory"
 $env:ALLOYED__DECORATION__ENABLETRANSPARENCY = "true"
 $env:ALLOYED__CATALOG__SOURCEPATH = "tools/ports/ports.catalog.json"
+$env:ALLOYED_CONSOLE_OUTPUT_MODE = "Rich"   # single underscore — PS-layer only
 ```
 
 ## Keys reference
@@ -43,6 +48,7 @@ $env:ALLOYED__CATALOG__SOURCEPATH = "tools/ports/ports.catalog.json"
 | `Alloyed:Mocking:Enabled` | bool | `false` | Enables mock mode controls. |
 | `Alloyed:Mocking:Mode` | `InMemory\|Moq\|Custom` | `InMemory` | Throws actionable error on invalid value. |
 | `Alloyed:Catalog:SourcePath` | string or empty | empty | Optional path to external `ports.catalog.json`. Empty uses embedded catalog from the assembly. |
+| `ALLOYED_CONSOLE_OUTPUT_MODE` | `Plain\|Rich` | `Plain` | PS-layer only (single underscore). Selects console reporter. `Rich` falls back to `Plain` when output is redirected (CI). |
 
 ## Example `config/appsettings.yml`
 
@@ -65,6 +71,27 @@ Alloyed:
     SourcePath: tools/ports/ports.catalog.json
 ```
 
+## Console reporter mode
+
+Controls whether output uses plain text or Spectre.Console rich formatting.
+
+Resolution order (first match wins):
+
+1. Per-call `-OutputMode Plain|Rich` parameter on `New-AlloyedModuleTransform` / `Test-AlloyedTransform` — applies only for that call, restores previous state on exit.
+2. Session override set by `Enable-AlloyedTransparencyMode -OutputMode Rich` or direct `$script:ConsoleOutputModeOverride` assignment.
+3. `ALLOYED_CONSOLE_OUTPUT_MODE` environment variable (`Plain` or `Rich`, case-insensitive). Note the single-underscore format — this key is not part of the `ALLOYED__` double-underscore C# config hierarchy.
+4. Default: `Plain`.
+
+`Rich` mode automatically falls back to `Plain` when `[Console]::IsOutputRedirected` is `true` (pipelines, CI runners with redirected stdout).
+
+```powershell
+# Session-wide rich output
+$env:ALLOYED_CONSOLE_OUTPUT_MODE = "Rich"
+
+# Single-call override (state restored after the call)
+New-AlloyedModuleTransform -ScriptPath ./script.ps1 -ModuleName MyModule -OutputMode Rich
+```
+
 ## Session mode commands
 
 ```powershell
@@ -84,7 +111,7 @@ $env:ALLOYED__DECORATION__ENABLETRANSPARENCY = "true"
 Or toggle at runtime for current session:
 
 ```powershell
-Enable-AlloyedTransparencyMode
+Enable-AlloyedTransparencyMode [-OutputMode Plain|Rich]
 Get-AlloyedTransparencyModeStatus
 Disable-AlloyedTransparencyMode
 ```
