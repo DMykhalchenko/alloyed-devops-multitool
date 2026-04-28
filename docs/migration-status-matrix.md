@@ -19,6 +19,7 @@ Status legend:
 | Milestone 8 Decorators expansion | Not started | Validation/Caching decorators are not implemented yet. |
 | Milestone 9 Publishing convergence | In progress | Preview publish workflow exists; final governance/release policy still open. |
 | #17 Spectre.Console reporting layer | Done | IConsoleReporter abstraction + PlainTextConsoleReporter + SpectreConsoleReporter behind host-only boundary; mode selection via env var and per-call override; CI-safe non-interactive fallback. |
+| #9 Bogus sandbox integration | Done | Tests.Sandbox project with SandboxScriptFaker, fixed seeds, 7 deterministic pipeline scenarios; split model documented in ADR-0003. |
 | Phase 1 governance docs closure | In progress | Matrix complete; alloy spec/policy issues remain open. |
 
 ## Plan vs Reality Matrix
@@ -52,7 +53,7 @@ Status legend:
 | Issue | Scope | Milestone |
 |---|---|---|
 | `#14` | Port architecture decision and generation contract | M3 |
-| `#9` | Bogus sandbox integration | M3 |
+| `#9` | Bogus sandbox integration | M3 — Done |
 | `#10` | CI/CD convergence (GHA + optional Jenkins runbook) | M4 |
 | `#11` | Migration completion criteria and maintenance policy | M4 |
 | `#17` | Spectre.Console reporting layer before Bogus | M4 — Done |
@@ -63,6 +64,7 @@ Status legend:
 
 - `dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Unit/Alloyed.DevOps.Multitool.Tests.Unit.csproj -c Release -m:1 -p:BuildInParallel=false` -> passed (`50`)
 - `dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration/Alloyed.DevOps.Multitool.Tests.Integration.csproj -c Release -m:1 -p:BuildInParallel=false` -> passed (`21`)
+- `dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Sandbox/Alloyed.DevOps.Multitool.Tests.Sandbox.csproj -c Release -m:1 -p:BuildInParallel=false` -> passed (`7`)
 - `pwsh -NoProfile -File tests/powershell/Smoke.Module.Tests.ps1` -> passed
 
 ## Governance Artifacts
@@ -71,5 +73,6 @@ Status legend:
 - Contract and versioning policy: `docs/contracts-and-versioning.md`
 - Port architecture ADR: `docs/adr-0001-port-architecture-and-generation-contract.md`
 - Spectre reporting ADR: `docs/adr-0002-spectre-console-reporting-boundary.md`
+- Bogus sandbox ADR: `docs/adr-0003-bogus-sandbox-boundary.md`
 - Delivery policy: `docs/delivery-policy.md`
 - Migration governance policy: `docs/migration-governance.md`
