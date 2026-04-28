@@ -63,3 +63,7 @@ Status legend:
 - `dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration/Alloyed.DevOps.Multitool.Tests.Integration.csproj -c Release -m:1 -p:BuildInParallel=false` -> passed (`15`)
 - `pwsh -NoProfile -File tests/powershell/Smoke.Module.Tests.ps1` -> passed
 
+## Governance Artifacts
+
+- Alloy spec: `ALLOYING_SPEC.md`
+- Contract and versioning policy: `docs/contracts-and-versioning.md`
