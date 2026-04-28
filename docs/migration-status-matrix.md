@@ -67,3 +67,4 @@ Status legend:
 
 - Alloy spec: `ALLOYING_SPEC.md`
 - Contract and versioning policy: `docs/contracts-and-versioning.md`
+- Port architecture ADR: `docs/adr-0001-port-architecture-and-generation-contract.md`

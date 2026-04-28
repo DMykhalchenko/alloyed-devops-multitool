@@ -153,6 +153,7 @@ pwsh -NoProfile -File ./dev.ps1 -Stage unit -Filter "FullyQualifiedName~Transfor
 - Podman/Jenkins runbook: `docs/temporary-ci-podman-remote.md`
 - Runtime config reference: `docs/runtime-configuration.md`
 - Contracts and versioning policy: `docs/contracts-and-versioning.md`
+- Port architecture ADR: `docs/adr-0001-port-architecture-and-generation-contract.md`
 - Migration status matrix: `docs/migration-status-matrix.md`
 
 ### Publish preview module to GitHub Packages
