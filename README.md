@@ -152,6 +152,7 @@ pwsh -NoProfile -File ./dev.ps1 -Stage unit -Filter "FullyQualifiedName~Transfor
 - Optional Jenkins Podman remote template: `Jenkinsfile.podman-remote`
 - Podman/Jenkins runbook: `docs/temporary-ci-podman-remote.md`
 - Runtime config reference: `docs/runtime-configuration.md`
+- Migration status matrix: `docs/migration-status-matrix.md`
 
 ### Publish preview module to GitHub Packages
 
