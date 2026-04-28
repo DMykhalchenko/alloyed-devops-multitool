@@ -88,6 +88,8 @@ pwsh -NoProfile -File ./tools/ports/Sync-PortsFromCatalog.ps1
 - Contracts and versioning: `docs/contracts-and-versioning.md`
 - Port architecture ADR: `docs/adr-0001-port-architecture-and-generation-contract.md`
 - Spectre reporting ADR: `docs/adr-0002-spectre-console-reporting-boundary.md`
+- Delivery policy: `docs/delivery-policy.md`
+- Migration governance: `docs/migration-governance.md`
 - Alloying spec: `ALLOYING_SPEC.md`
 - Migration status matrix: `docs/migration-status-matrix.md`
 - Migration archive (imported from legacy planning set): `docs/migration/`

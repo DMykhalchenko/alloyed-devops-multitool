@@ -70,3 +70,5 @@ Status legend:
 - Contract and versioning policy: `docs/contracts-and-versioning.md`
 - Port architecture ADR: `docs/adr-0001-port-architecture-and-generation-contract.md`
 - Spectre reporting ADR: `docs/adr-0002-spectre-console-reporting-boundary.md`
+- Delivery policy: `docs/delivery-policy.md`
+- Migration governance policy: `docs/migration-governance.md`
