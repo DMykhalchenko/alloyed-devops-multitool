@@ -154,6 +154,7 @@ pwsh -NoProfile -File ./dev.ps1 -Stage unit -Filter "FullyQualifiedName~Transfor
 - Runtime config reference: `docs/runtime-configuration.md`
 - Contracts and versioning policy: `docs/contracts-and-versioning.md`
 - Port architecture ADR: `docs/adr-0001-port-architecture-and-generation-contract.md`
+- Spectre reporting ADR: `docs/adr-0002-spectre-console-reporting-boundary.md`
 - Migration status matrix: `docs/migration-status-matrix.md`
 
 ### Publish preview module to GitHub Packages

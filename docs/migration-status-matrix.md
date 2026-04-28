@@ -54,6 +54,7 @@ Status legend:
 | `#9` | Bogus sandbox integration | M3 |
 | `#10` | CI/CD convergence (GHA + optional Jenkins runbook) | M4 |
 | `#11` | Migration completion criteria and maintenance policy | M4 |
+| `#17` | Spectre.Console reporting layer before Bogus | M4 |
 | `#6` | Public contracts and versioning policy | M2/M3 |
 | `#2` | Alloy spec draft/approval | M1 |
 
@@ -68,3 +69,4 @@ Status legend:
 - Alloy spec: `ALLOYING_SPEC.md`
 - Contract and versioning policy: `docs/contracts-and-versioning.md`
 - Port architecture ADR: `docs/adr-0001-port-architecture-and-generation-contract.md`
+- Spectre reporting ADR: `docs/adr-0002-spectre-console-reporting-boundary.md`
