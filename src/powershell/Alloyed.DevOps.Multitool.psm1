@@ -4,6 +4,7 @@ $script:SessionModeAliases = @()
 $script:SessionModeAliasBackup = @{}
 $script:DecorationPipeline = $null
 $script:TransparencyModeOverride = $null
+$script:ConsoleOutputModeOverride = $null
 
 function Initialize-AlloyedHostAssembly {
     if ($script:AssemblyLoaded) { return }
@@ -76,6 +77,63 @@ function Resolve-AlloyedTransparencyEnabled {
 
     $configuration = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateRuntimeConfiguration((Get-Location).Path, $null)
     return [bool]$configuration.Decoration.EnableTransparency
+}
+
+function Resolve-AlloyedConsoleOutputMode {
+    if ($null -ne $script:ConsoleOutputModeOverride) {
+        return $script:ConsoleOutputModeOverride
+    }
+
+    $environmentMode = [System.Environment]::GetEnvironmentVariable('ALLOYED_CONSOLE_OUTPUT_MODE')
+    if (-not [string]::IsNullOrWhiteSpace($environmentMode)) {
+        if ($environmentMode -ieq 'rich') {
+            return [Alloyed.DevOps.Multitool.Host.PowerShell.Services.ConsoleOutputMode]::Rich
+        }
+    }
+
+    return [Alloyed.DevOps.Multitool.Host.PowerShell.Services.ConsoleOutputMode]::Plain
+}
+
+function Get-AlloyedConsoleReporter {
+    Initialize-AlloyedHostAssembly
+
+    $isInteractive = -not [System.Console]::IsOutputRedirected
+    $mode = Resolve-AlloyedConsoleOutputMode
+    return [Alloyed.DevOps.Multitool.Host.PowerShell.Services.ConsoleReporterFactory]::Create($mode, $isInteractive, $null)
+}
+
+function Write-AlloyedPipelineResultSummary {
+    param(
+        [Parameter(Mandatory)] [object]$Result,
+        [Parameter(Mandatory)] [string]$Operation
+    )
+
+    $reporter = Get-AlloyedConsoleReporter
+    $reporter.WriteHeader($Operation)
+
+    if ($Result.Success) {
+        $reporter.WriteMessage([Alloyed.DevOps.Multitool.Host.PowerShell.Contracts.ConsoleMessageLevel]::Info, 'Pipeline completed successfully.')
+    } else {
+        $reporter.WriteMessage([Alloyed.DevOps.Multitool.Host.PowerShell.Contracts.ConsoleMessageLevel]::Error, 'Pipeline failed.')
+    }
+
+    $reporter.WriteKeyValue('CommandsFound', [string]$Result.CommandsFound)
+    $reporter.WriteKeyValue('CommandsReplaced', [string]$Result.CommandsReplaced)
+    $reporter.WriteKeyValue('MissingCommands', [string]@($Result.MissingCommands).Count)
+
+    if (-not [string]::IsNullOrWhiteSpace($Result.ModulePath)) {
+        $reporter.WriteKeyValue('ModulePath', [string]$Result.ModulePath)
+    }
+
+    foreach ($diagnostic in @($Result.Diagnostics)) {
+        $level = switch ($diagnostic.Severity.ToString()) {
+            'Error' { [Alloyed.DevOps.Multitool.Host.PowerShell.Contracts.ConsoleMessageLevel]::Error; break }
+            'Warning' { [Alloyed.DevOps.Multitool.Host.PowerShell.Contracts.ConsoleMessageLevel]::Warning; break }
+            default { [Alloyed.DevOps.Multitool.Host.PowerShell.Contracts.ConsoleMessageLevel]::Info; break }
+        }
+
+        $reporter.WriteMessage($level, "[{0}] {1}" -f $diagnostic.Code, $diagnostic.Message)
+    }
 }
 
 function Invoke-AlloyedDecoratedCommand {
@@ -184,7 +242,8 @@ function New-AlloyedModuleTransform {
         [Parameter()] [string]$OutputPath,
         [Parameter()] [switch]$Force,
         [Parameter()] [ValidateSet('Info','Warning','Error')] [string]$FailOnSeverity,
-        [Parameter()] [switch]$FailOnWarnings
+        [Parameter()] [switch]$FailOnWarnings,
+        [Parameter()] [ValidateSet('Plain','Rich')] [string]$OutputMode
     )
 
     Initialize-AlloyedHostAssembly
@@ -206,11 +265,21 @@ function New-AlloyedModuleTransform {
     }
 
     if ($PSCmdlet.ShouldProcess($ModuleName, 'Transform script and build module')) {
-        $pipeline = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateDefault($basePath, $null)
-        $severity = Resolve-FailOnSeverity -FailOnSeverity $FailOnSeverity -FailOnWarnings:$FailOnWarnings
-        $request = [Alloyed.DevOps.Multitool.Host.PowerShell.Models.PipelineRequest]::new($ScriptPath, $ModuleName, $OutputPath, $Force.IsPresent, $severity)
-        $result = $pipeline.Execute($request)
-        return $result
+        $prevMode = $script:ConsoleOutputModeOverride
+        try {
+            if (-not [string]::IsNullOrWhiteSpace($OutputMode)) {
+                $script:ConsoleOutputModeOverride = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.ConsoleOutputMode]::$OutputMode
+            }
+
+            $pipeline = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateDefault($basePath, $null)
+            $severity = Resolve-FailOnSeverity -FailOnSeverity $FailOnSeverity -FailOnWarnings:$FailOnWarnings
+            $request = [Alloyed.DevOps.Multitool.Host.PowerShell.Models.PipelineRequest]::new($ScriptPath, $ModuleName, $OutputPath, $Force.IsPresent, $severity)
+            $result = $pipeline.Execute($request)
+            Write-AlloyedPipelineResultSummary -Result $result -Operation 'New-AlloyedModuleTransform'
+            return $result
+        } finally {
+            $script:ConsoleOutputModeOverride = $prevMode
+        }
     }
 }
 
@@ -219,18 +288,29 @@ function Test-AlloyedTransform {
     param(
         [Parameter(Mandatory)] [string]$ScriptPath,
         [Parameter()] [ValidateSet('Info','Warning','Error')] [string]$FailOnSeverity,
-        [Parameter()] [switch]$FailOnWarnings
+        [Parameter()] [switch]$FailOnWarnings,
+        [Parameter()] [ValidateSet('Plain','Rich')] [string]$OutputMode
     )
 
     Initialize-AlloyedHostAssembly
 
-    $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) 'alloyed-transform-test'
-    $moduleName = 'AlloyedTransformValidation'
+    $prevMode = $script:ConsoleOutputModeOverride
+    try {
+        if (-not [string]::IsNullOrWhiteSpace($OutputMode)) {
+            $script:ConsoleOutputModeOverride = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.ConsoleOutputMode]::$OutputMode
+        }
 
-    $pipeline = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateDefault()
-    $severity = Resolve-FailOnSeverity -FailOnSeverity $FailOnSeverity -FailOnWarnings:$FailOnWarnings
-    $request = [Alloyed.DevOps.Multitool.Host.PowerShell.Models.PipelineRequest]::new($ScriptPath, $moduleName, $tempRoot, $true, $severity)
-    $result = $pipeline.Execute($request)
+        $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) 'alloyed-transform-test'
+        $moduleName = 'AlloyedTransformValidation'
+
+        $pipeline = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateDefault()
+        $severity = Resolve-FailOnSeverity -FailOnSeverity $FailOnSeverity -FailOnWarnings:$FailOnWarnings
+        $request = [Alloyed.DevOps.Multitool.Host.PowerShell.Models.PipelineRequest]::new($ScriptPath, $moduleName, $tempRoot, $true, $severity)
+        $result = $pipeline.Execute($request)
+        Write-AlloyedPipelineResultSummary -Result $result -Operation 'Test-AlloyedTransform'
+    } finally {
+        $script:ConsoleOutputModeOverride = $prevMode
+    }
 
     [pscustomobject]@{
         Success = $result.Success
@@ -402,11 +482,16 @@ function Get-AlloyedSessionModeStatus {
 function Enable-AlloyedTransparencyMode {
     [CmdletBinding()]
     param(
-        [Parameter()] [switch]$SkipSessionMode
+        [Parameter()] [switch]$SkipSessionMode,
+        [Parameter()] [ValidateSet('Plain','Rich')] [string]$OutputMode
     )
 
     if (-not $SkipSessionMode.IsPresent) {
         $null = Enable-AlloyedSessionMode -Force
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($OutputMode)) {
+        $script:ConsoleOutputModeOverride = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.ConsoleOutputMode]::$OutputMode
     }
 
     $script:TransparencyModeOverride = $true
@@ -418,6 +503,7 @@ function Disable-AlloyedTransparencyMode {
     param()
 
     $script:TransparencyModeOverride = $false
+    $script:ConsoleOutputModeOverride = $null
     Get-AlloyedTransparencyModeStatus
 }
 
@@ -429,5 +515,6 @@ function Get-AlloyedTransparencyModeStatus {
         Enabled = Resolve-AlloyedTransparencyEnabled
         Override = if ($null -eq $script:TransparencyModeOverride) { '<config>' } else { [bool]$script:TransparencyModeOverride }
         SessionModeEnabled = [bool]$script:SessionModeEnabled
+        OutputMode = (Resolve-AlloyedConsoleOutputMode).ToString()
     }
 }

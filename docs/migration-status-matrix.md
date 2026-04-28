@@ -18,6 +18,7 @@ Status legend:
 | Milestone 7.2 Minimal config layer | Done | Runtime config now includes default output path and catalog source path. |
 | Milestone 8 Decorators expansion | Not started | Validation/Caching decorators are not implemented yet. |
 | Milestone 9 Publishing convergence | In progress | Preview publish workflow exists; final governance/release policy still open. |
+| #17 Spectre.Console reporting layer | Done | IConsoleReporter abstraction + PlainTextConsoleReporter + SpectreConsoleReporter behind host-only boundary; mode selection via env var and per-call override; CI-safe non-interactive fallback. |
 | Phase 1 governance docs closure | In progress | Matrix complete; alloy spec/policy issues remain open. |
 
 ## Plan vs Reality Matrix
@@ -54,14 +55,14 @@ Status legend:
 | `#9` | Bogus sandbox integration | M3 |
 | `#10` | CI/CD convergence (GHA + optional Jenkins runbook) | M4 |
 | `#11` | Migration completion criteria and maintenance policy | M4 |
-| `#17` | Spectre.Console reporting layer before Bogus | M4 |
+| `#17` | Spectre.Console reporting layer before Bogus | M4 — Done |
 | `#6` | Public contracts and versioning policy | M2/M3 |
 | `#2` | Alloy spec draft/approval | M1 |
 
 ## Verification Baseline (2026-04-28)
 
 - `dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Unit/Alloyed.DevOps.Multitool.Tests.Unit.csproj -c Release -m:1 -p:BuildInParallel=false` -> passed (`50`)
-- `dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration/Alloyed.DevOps.Multitool.Tests.Integration.csproj -c Release -m:1 -p:BuildInParallel=false` -> passed (`15`)
+- `dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration/Alloyed.DevOps.Multitool.Tests.Integration.csproj -c Release -m:1 -p:BuildInParallel=false` -> passed (`21`)
 - `pwsh -NoProfile -File tests/powershell/Smoke.Module.Tests.ps1` -> passed
 
 ## Governance Artifacts

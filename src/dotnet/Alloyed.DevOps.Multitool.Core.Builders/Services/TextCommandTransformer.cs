@@ -16,6 +16,12 @@ public sealed partial class TextCommandTransformer : ICommandTransformer
             .Where(static kv => !string.Equals(kv.Key, kv.Value, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(static kv => kv.Key.Length)
             .ThenBy(static kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(static kv => (
+                Pattern: new Regex(
+                    $@"(?<![\w-]){Regex.Escape(kv.Key)}(?![\w-])",
+                    RegexOptions.CultureInvariant | RegexOptions.Compiled,
+                    TimeSpan.FromSeconds(5)),
+                Replacement: kv.Value))
             .ToList();
 
         if (ordered.Count == 0)
@@ -224,15 +230,13 @@ public sealed partial class TextCommandTransformer : ICommandTransformer
         return true;
     }
 
-    private static string ApplyReplacements(string source, IReadOnlyList<KeyValuePair<string, string>> ordered)
+    private static string ApplyReplacements(string source, IReadOnlyList<(Regex Pattern, string Replacement)> ordered)
     {
         var current = source;
 
-        foreach (var (original, replacement) in ordered)
+        foreach (var (pattern, replacement) in ordered)
         {
-            var escaped = Regex.Escape(original);
-            var pattern = $@"(?<![\w-]){escaped}(?![\w-])";
-            current = Regex.Replace(current, pattern, replacement, RegexOptions.CultureInvariant);
+            current = pattern.Replace(current, replacement);
         }
 
         return current;

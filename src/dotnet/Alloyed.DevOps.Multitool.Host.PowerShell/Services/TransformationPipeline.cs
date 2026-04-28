@@ -35,9 +35,10 @@ public sealed class TransformationPipeline : ITransformationPipeline
         try
         {
             Validate(request);
+            var ctx = Resolve(request);
 
-            var modulePath = Path.Combine(request.OutputPath, request.ModuleName);
-            if (Directory.Exists(modulePath) && !request.Force)
+            var modulePath = Path.Combine(ctx.OutputPath, ctx.ModuleName);
+            if (Directory.Exists(modulePath) && !ctx.Force)
             {
                 var diagnostics = new[]
                 {
@@ -60,11 +61,10 @@ public sealed class TransformationPipeline : ITransformationPipeline
                     ErrorMessage: diagnostics[0].Message);
             }
 
-            var analysis = _analyzer.AnalyzeFile(request.ScriptPath);
+            var analysis = _analyzer.AnalyzeFile(ctx.ScriptPath);
             var pipelineDiagnostics = MapAstDiagnostics(analysis.Diagnostics);
 
-            var effectiveFailOnSeverity = request.FailOnSeverity ?? _configuration.Runtime.FailOnSeverity;
-            if (effectiveFailOnSeverity is { } threshold && pipelineDiagnostics.Any(d => d.Severity >= threshold))
+            if (ctx.FailOnSeverity is { } threshold && pipelineDiagnostics.Any(d => d.Severity >= threshold))
             {
                 var message = $"Pipeline stopped because analyzer diagnostics met fail policy ({threshold} or higher).";
                 var diagnostics = pipelineDiagnostics.Concat(new[]
@@ -93,8 +93,8 @@ public sealed class TransformationPipeline : ITransformationPipeline
             var transformed = _transformer.Transform(analysis.SourceText, resolution.Replacements);
 
             var buildRequest = new ModuleBuildRequest(
-                ModuleName: request.ModuleName,
-                OutputPath: request.OutputPath,
+                ModuleName: ctx.ModuleName,
+                OutputPath: ctx.OutputPath,
                 TransformedScript: transformed,
                 RequiredModules: resolution.RequiredModules,
                 Author: Environment.UserName,
@@ -214,4 +214,19 @@ public sealed class TransformationPipeline : ITransformationPipeline
             _ => PipelineDiagnosticSeverity.Warning,
         };
     }
+
+    private EffectivePipelineContext Resolve(PipelineRequest request) =>
+        new(
+            ScriptPath: request.ScriptPath,
+            ModuleName: request.ModuleName,
+            OutputPath: request.OutputPath,
+            Force: request.Force,
+            FailOnSeverity: request.FailOnSeverity ?? _configuration.Runtime.FailOnSeverity);
+
+    private readonly record struct EffectivePipelineContext(
+        string ScriptPath,
+        string ModuleName,
+        string OutputPath,
+        bool Force,
+        PipelineDiagnosticSeverity? FailOnSeverity);
 }
