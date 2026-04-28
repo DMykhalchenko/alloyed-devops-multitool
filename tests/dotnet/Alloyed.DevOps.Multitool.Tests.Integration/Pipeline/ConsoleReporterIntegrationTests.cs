@@ -18,6 +18,23 @@ public class ConsoleReporterIntegrationTests
     }
 
     [Fact]
+    public void Factory_Should_ReturnSpectreReporter_ForRichInteractiveMode()
+    {
+        var reporter = ConsoleReporterFactory.Create(ConsoleOutputMode.Rich, isInteractive: true);
+
+        reporter.Should().BeOfType<SpectreConsoleReporter>();
+    }
+
+    [Fact]
+    public void Factory_Should_FallbackToPlainReporter_ForRichNonInteractiveMode()
+    {
+        var writer = new StringWriter(new StringBuilder());
+        var reporter = ConsoleReporterFactory.Create(ConsoleOutputMode.Rich, isInteractive: false, writer);
+
+        reporter.Should().BeOfType<PlainTextConsoleReporter>();
+    }
+
+    [Fact]
     public void PlainReporter_Should_WriteExpectedFormat()
     {
         var writer = new StringWriter(new StringBuilder());
@@ -33,4 +50,3 @@ public class ConsoleReporterIntegrationTests
         output.Should().Contain("CommandsFound: 3");
     }
 }
-
