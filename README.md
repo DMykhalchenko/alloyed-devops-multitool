@@ -11,11 +11,11 @@ Multitool transforms PowerShell scripts into wrapper-based modules and routes su
 - Add cross-cutting behavior without polluting business logic.
 - Build a path from migration to production usage with reversible milestones.
 
-## Current baseline (verified 2026-04-27)
+## Current baseline (verified 2026-04-28)
 
 - `pwsh -NoProfile -File ./dev.ps1 -Stage ci` passes locally.
-- Unit tests: `46` passed.
-- Integration tests: `13` passed.
+- Unit tests: `50` passed.
+- Integration tests: `14` passed.
 - End-to-end smoke: passed.
 - `Provider.FileSystem` ports include `Get/Copy/Move/Remove/New-Item` and `Get/Set-Content` wrappers.
 
@@ -130,11 +130,13 @@ pwsh -NoProfile -File ./dev.ps1 -Stage full
 
 ### Port catalog code generation
 
-Wrappers, wrapper exports, and catalog mappings are generated from `tools/ports/ports.catalog.json`:
+Wrappers and wrapper exports are generated from `tools/ports/ports.catalog.json`:
 
 ```powershell
 pwsh -NoProfile -File ./tools/ports/Sync-PortsFromCatalog.ps1
 ```
+
+Runtime C# catalog mappings are loaded directly from the same `ports.catalog.json` file (embedded resource), so no manual C# map sync is required.
 
 ### Targeted test run
 

@@ -181,7 +181,7 @@ function New-AlloyedModuleTransform {
     param(
         [Parameter(Mandatory)] [string]$ScriptPath,
         [Parameter(Mandatory)] [string]$ModuleName,
-        [Parameter()] [string]$OutputPath = (Join-Path (Get-Location) 'out'),
+        [Parameter()] [string]$OutputPath,
         [Parameter()] [switch]$Force,
         [Parameter()] [ValidateSet('Info','Warning','Error')] [string]$FailOnSeverity,
         [Parameter()] [switch]$FailOnWarnings
@@ -189,8 +189,24 @@ function New-AlloyedModuleTransform {
 
     Initialize-AlloyedHostAssembly
 
+    $basePath = (Get-Location).Path
+    $configuration = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateRuntimeConfiguration($basePath, $null)
+
+    if ([string]::IsNullOrWhiteSpace($OutputPath)) {
+        $defaultOutputPath = $configuration.Runtime.DefaultOutputPath
+        if ([string]::IsNullOrWhiteSpace($defaultOutputPath)) {
+            $defaultOutputPath = 'out'
+        }
+
+        $OutputPath = if ([System.IO.Path]::IsPathRooted($defaultOutputPath)) {
+            $defaultOutputPath
+        } else {
+            Join-Path $basePath $defaultOutputPath
+        }
+    }
+
     if ($PSCmdlet.ShouldProcess($ModuleName, 'Transform script and build module')) {
-        $pipeline = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateDefault()
+        $pipeline = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateDefault($basePath, $null)
         $severity = Resolve-FailOnSeverity -FailOnSeverity $FailOnSeverity -FailOnWarnings:$FailOnWarnings
         $request = [Alloyed.DevOps.Multitool.Host.PowerShell.Models.PipelineRequest]::new($ScriptPath, $ModuleName, $OutputPath, $Force.IsPresent, $severity)
         $result = $pipeline.Execute($request)

@@ -29,6 +29,7 @@ public sealed class RuntimeConfigurationLoader
 
     private static void ApplyDefaults(IDictionary<string, string> values)
     {
+        values["Alloyed:Runtime:DefaultOutputPath"] = "out";
         values["Alloyed:Session:Enabled"] = "false";
         values["Alloyed:Decoration:EnableErrorHandling"] = "true";
         values["Alloyed:Decoration:EnableObservability"] = "true";
@@ -36,6 +37,7 @@ public sealed class RuntimeConfigurationLoader
         values["Alloyed:Decoration:EnableTransparency"] = "false";
         values["Alloyed:Mocking:Enabled"] = "false";
         values["Alloyed:Mocking:Mode"] = "InMemory";
+        values["Alloyed:Catalog:SourcePath"] = string.Empty;
     }
 
     private static string? ResolveYamlPath(string basePath)
@@ -235,7 +237,8 @@ public sealed class RuntimeConfigurationLoader
             FailOnSeverity: ParseOptionalEnum<PipelineDiagnosticSeverity>(
                 values,
                 "Alloyed:Runtime:FailOnSeverity",
-                "TAF:Runtime:FailOnSeverity"));
+                "TAF:Runtime:FailOnSeverity"),
+            DefaultOutputPath: ParseString(values, defaultValue: "out", "Alloyed:Runtime:DefaultOutputPath", "TAF:Runtime:DefaultOutputPath"));
 
         var session = new SessionOptions(
             Enabled: ParseBool(values, defaultValue: false, "Alloyed:Session:Enabled", "TAF:Session:Enabled"));
@@ -250,7 +253,10 @@ public sealed class RuntimeConfigurationLoader
             Enabled: ParseBool(values, defaultValue: false, "Alloyed:Mocking:Enabled", "TAF:Mocking:Enabled"),
             Mode: ParseEnum<MockingMode>(values, defaultValue: MockingMode.InMemory, "Alloyed:Mocking:Mode", "TAF:Mocking:Mode"));
 
-        return new RuntimeConfiguration(runtime, session, decoration, mocking);
+        var catalog = new CatalogOptions(
+            SourcePath: ParseOptionalString(values, "Alloyed:Catalog:SourcePath", "TAF:Catalog:SourcePath"));
+
+        return new RuntimeConfiguration(runtime, session, decoration, mocking, catalog);
     }
 
     private static bool ParseBool(IReadOnlyDictionary<string, string> values, bool defaultValue, params string[] keys)
@@ -301,6 +307,18 @@ public sealed class RuntimeConfigurationLoader
         }
 
         throw new InvalidOperationException($"Invalid value '{raw}' for configuration key(s): {string.Join(", ", keys)}");
+    }
+
+    private static string ParseString(IReadOnlyDictionary<string, string> values, string defaultValue, params string[] keys)
+    {
+        var raw = GetValue(values, keys);
+        return string.IsNullOrWhiteSpace(raw) ? defaultValue : raw;
+    }
+
+    private static string? ParseOptionalString(IReadOnlyDictionary<string, string> values, params string[] keys)
+    {
+        var raw = GetValue(values, keys);
+        return string.IsNullOrWhiteSpace(raw) ? null : raw;
     }
 
     private static string? GetValue(IReadOnlyDictionary<string, string> values, params string[] keys)

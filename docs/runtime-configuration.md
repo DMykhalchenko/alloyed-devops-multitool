@@ -21,10 +21,12 @@ Examples:
 
 ```powershell
 $env:ALLOYED__RUNTIME__FAILONSEVERITY = "Warning"
+$env:ALLOYED__RUNTIME__DEFAULTOUTPUTPATH = "generated-modules"
 $env:ALLOYED__SESSION__ENABLED = "true"
 $env:ALLOYED__MOCKING__ENABLED = "true"
 $env:ALLOYED__MOCKING__MODE = "InMemory"
 $env:ALLOYED__DECORATION__ENABLETRANSPARENCY = "true"
+$env:ALLOYED__CATALOG__SOURCEPATH = "tools/ports/ports.catalog.json"
 ```
 
 ## Keys reference
@@ -32,6 +34,7 @@ $env:ALLOYED__DECORATION__ENABLETRANSPARENCY = "true"
 | Key | Type | Default | Notes |
 |---|---|---|---|
 | `Alloyed:Runtime:FailOnSeverity` | `Info\|Warning\|Error` or empty | empty | When set, pipeline fails if diagnostics meet/exceed threshold. |
+| `Alloyed:Runtime:DefaultOutputPath` | string | `out` | Used by `New-AlloyedModuleTransform` when `-OutputPath` is omitted. Can be relative to current directory or absolute. |
 | `Alloyed:Session:Enabled` | bool | `false` | Session mode feature flag (behavior delivered in next wave). |
 | `Alloyed:Decoration:EnableErrorHandling` | bool | `true` | Decorator runtime flag. |
 | `Alloyed:Decoration:EnableObservability` | bool | `true` | Decorator runtime flag. |
@@ -39,6 +42,7 @@ $env:ALLOYED__DECORATION__ENABLETRANSPARENCY = "true"
 | `Alloyed:Decoration:EnableTransparency` | bool | `false` | Watch/transparency mode flag (next wave). |
 | `Alloyed:Mocking:Enabled` | bool | `false` | Enables mock mode controls. |
 | `Alloyed:Mocking:Mode` | `InMemory\|Moq\|Custom` | `InMemory` | Throws actionable error on invalid value. |
+| `Alloyed:Catalog:SourcePath` | string or empty | empty | Optional path to external `ports.catalog.json`. Empty uses embedded catalog from the assembly. |
 
 ## Example `config/appsettings.yml`
 
@@ -46,6 +50,7 @@ $env:ALLOYED__DECORATION__ENABLETRANSPARENCY = "true"
 Alloyed:
   Runtime:
     FailOnSeverity: Warning
+    DefaultOutputPath: generated-modules
   Session:
     Enabled: false
   Decoration:
@@ -56,6 +61,8 @@ Alloyed:
   Mocking:
     Enabled: false
     Mode: InMemory
+  Catalog:
+    SourcePath: tools/ports/ports.catalog.json
 ```
 
 ## Session mode commands
