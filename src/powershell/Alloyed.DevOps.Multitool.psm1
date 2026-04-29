@@ -225,14 +225,31 @@ function Initialize-AlloyedWrappersFromCatalog {
             continue
         }
 
-        $wrapperBody = if ($operation -eq 'Clear-Host') {
-            "function global:$wrapperName { Invoke-AlloyedDecoratedCommand -Operation '$operation' -Parameters @{} -Action { $native } }"
-        } else {
-            "function global:$wrapperName { Invoke-AlloyedDecoratedCommand -Operation '$operation' -Arguments `$args -InputObjects @(`$input) -Action { $native @args } }"
-        }
-
-        $null = Invoke-Expression $wrapperBody
+        Set-AlloyedCommandProxyFunction -Name $wrapperName -Operation $operation -NativeCommand $native
     }
+}
+
+function Set-AlloyedCommandProxyFunction {
+    param(
+        [Parameter(Mandatory)] [string]$Name,
+        [Parameter(Mandatory)] [string]$Operation,
+        [Parameter(Mandatory)] [string]$NativeCommand
+    )
+
+    $operationCopy = $Operation
+    $nativeCopy = $NativeCommand
+    $isClearHost = $Operation -eq 'Clear-Host'
+    $decoratedInvoker = ${function:Invoke-AlloyedDecoratedCommand}
+
+    $proxy = {
+        if ($isClearHost) {
+            & $decoratedInvoker -Operation $operationCopy -Parameters @{} -Action { & $nativeCopy }
+        } else {
+            & $decoratedInvoker -Operation $operationCopy -Arguments $args -InputObjects @($input) -Action { & $nativeCopy @args }
+        }
+    }.GetNewClosure()
+
+    Set-Item -LiteralPath ("Function:global:{0}" -f $Name) -Value $proxy -Force
 }
 
 function Initialize-AlloyedRuntimeConfig {
@@ -1017,13 +1034,7 @@ function Enable-AlloyedSessionMode {
                 Remove-Item -LiteralPath ("Alias:{0}" -f $name) -Force -ErrorAction SilentlyContinue
             }
 
-            $functionBody = if ($name -eq 'Clear-Host') {
-                "function global:$name { Invoke-AlloyedDecoratedCommand -Operation '$name' -Parameters @{} -Action { $nativeCommand } }"
-            } else {
-                "function global:$name { Invoke-AlloyedDecoratedCommand -Operation '$name' -Arguments `$args -InputObjects @(`$input) -Action { $nativeCommand @args } }"
-            }
-
-            $null = Invoke-Expression $functionBody
+            Set-AlloyedCommandProxyFunction -Name $name -Operation $name -NativeCommand $nativeCommand
 
             if ($existingAlias) {
                 $script:SessionModeAliasBackup[$name] = $existingAlias.Definition
