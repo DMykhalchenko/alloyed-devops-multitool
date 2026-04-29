@@ -14,7 +14,7 @@ concurrency:
 jobs:
   super-linter:
     name: gha/super-linter
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       statuses: write

@@ -10,6 +10,22 @@
 - transform scripts into wrapper-based modules,
 - control runtime behavior with explicit configuration.
 
+## Table of Contents
+
+- [Why This Exists](#why-this-exists)
+- [Quick Start](#quick-start)
+- [Execution Flow](#execution-flow)
+- [Architecture](#architecture)
+- [Public Command Surface](#public-command-surface)
+- [Runtime Policy](#runtime-policy)
+- [Script Transformation](#script-transformation)
+- [Migration Roadmap View](#migration-roadmap-view)
+- [Validation](#validation)
+- [Documentation](#documentation)
+- [Repository Layout](#repository-layout)
+- [License](#license)
+- [Release Pipeline](#release-pipeline)
+
 ## Why This Exists
 
 Many teams have production PowerShell scripts that are hard to observe, risky to refactor, and expensive to rewrite.
@@ -180,19 +196,27 @@ pwsh -NoProfile -File ./dev.ps1 -Stage smoke
 
 ## Documentation
 
-- Installation from GitHub Packages: `docs/install-module.md`
-- Runtime configuration: `docs/runtime-configuration.md`
-- Transparency quickstart: `docs/transparency-quickstart.md`
-- Module access model: `docs/module-access-model.md`
-- Contracts and versioning: `docs/contracts-and-versioning.md`
-- Port architecture ADR: `docs/adr-0001-port-architecture-and-generation-contract.md`
-- Spectre reporting ADR: `docs/adr-0002-spectre-console-reporting-boundary.md`
-- Delivery policy: `docs/delivery-policy.md`
-- Migration governance: `docs/migration-governance.md`
-- Migration status matrix: `docs/migration-status-matrix.md`
-- Alloying spec: `ALLOYING_SPEC.md`
+<details>
+<summary>Open docs index</summary>
+
+- Installation from GitHub Packages: [docs/install-module.md](docs/install-module.md)
+- Runtime configuration: [docs/runtime-configuration.md](docs/runtime-configuration.md)
+- Transparency quickstart: [docs/transparency-quickstart.md](docs/transparency-quickstart.md)
+- Module access model: [docs/module-access-model.md](docs/module-access-model.md)
+- Contracts and versioning: [docs/contracts-and-versioning.md](docs/contracts-and-versioning.md)
+- Port architecture ADR: [docs/adr-0001-port-architecture-and-generation-contract.md](docs/adr-0001-port-architecture-and-generation-contract.md)
+- Spectre reporting ADR: [docs/adr-0002-spectre-console-reporting-boundary.md](docs/adr-0002-spectre-console-reporting-boundary.md)
+- Delivery policy: [docs/delivery-policy.md](docs/delivery-policy.md)
+- Migration governance: [docs/migration-governance.md](docs/migration-governance.md)
+- Migration status matrix: [docs/migration-status-matrix.md](docs/migration-status-matrix.md)
+- Alloying spec: [ALLOYING_SPEC.md](ALLOYING_SPEC.md)
+
+</details>
 
 ## Repository Layout
+
+<details>
+<summary>Open source tree overview</summary>
 
 - `src/dotnet/Alloyed.DevOps.Multitool.Core.Ast`
 - `src/dotnet/Alloyed.DevOps.Multitool.Core.Catalog`
@@ -202,6 +226,8 @@ pwsh -NoProfile -File ./dev.ps1 -Stage smoke
 - `src/powershell`
 - `tests/dotnet`
 - `tests/powershell`
+
+</details>
 
 ## License
 

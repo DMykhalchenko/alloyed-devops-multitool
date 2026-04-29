@@ -33,7 +33,7 @@ concurrency:
 jobs:
   publish-preview:
     name: gha/publish-preview
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
