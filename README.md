@@ -179,3 +179,11 @@ pwsh -NoProfile -File ./dev.ps1 -Stage smoke
 ## License
 
 MIT. See `LICENSE`.
+
+## Release Pipeline
+
+A low-frequency integration + publish pipeline is available in `.github/workflows/integration-publish.yml`:
+
+- Weekly scheduled run (`Sunday 03:30 UTC`)
+- Manual trigger (`workflow_dispatch`)
+- Publishes preview module to GitHub Packages only after successful integration tests

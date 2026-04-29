@@ -1,0 +1,114 @@
+name: Integration Tests and Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      module_version:
+        description: "Stable module version (without prerelease suffix), e.g. 0.3.0"
+        required: true
+        default: "0.3.0"
+      prerelease_label:
+        description: "Preview label prefix, e.g. preview"
+        required: true
+        default: "preview"
+      prerelease_iteration:
+        description: "Preview iteration number, e.g. 1"
+        required: true
+        default: "1"
+  schedule:
+    # Weekly on Sundays, 03:30 UTC
+    - cron: "30 3 * * 0"
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: integration-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  integration-tests:
+    name: gha/integration-tests
+    runs-on: ubuntu-slim
+
+    env:
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      DOTNET_CLI_HOME: ${{ github.workspace }}/.dotnet-cli
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Setup .NET from global.json
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
+        with:
+          global-json-file: global.json
+          dotnet-version: |
+            8.0.x
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore Alloyed.DevOps.Multitool.slnx --verbosity minimal
+
+      - name: Build
+        shell: pwsh
+        run: dotnet build Alloyed.DevOps.Multitool.slnx -c Release --no-restore
+
+      - name: Integration tests
+        shell: pwsh
+        run: dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration/Alloyed.DevOps.Multitool.Tests.Integration.csproj -c Release --no-build -m:1
+
+  publish-preview:
+    name: gha/publish-preview
+    needs: integration-tests
+    runs-on: ubuntu-slim
+    if: ${{ github.ref == 'refs/heads/main' }}
+
+    env:
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      DOTNET_CLI_HOME: ${{ github.workspace }}/.dotnet-cli
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Setup .NET from global.json
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
+        with:
+          global-json-file: global.json
+          dotnet-version: |
+            8.0.x
+
+      - name: Resolve publish version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $moduleVersion = "${{ inputs.module_version }}"
+            $prerelease = "${{ inputs.prerelease_label }}${{ inputs.prerelease_iteration }}"
+          } else {
+            $manifestPath = "src/powershell/Alloyed.DevOps.Multitool.psd1"
+            $content = Get-Content -Raw -LiteralPath $manifestPath
+            if ($content -match "ModuleVersion\s*=\s*'([^']+)'") {
+              $moduleVersion = $Matches[1]
+            } else {
+              throw "Unable to parse ModuleVersion from $manifestPath"
+            }
+            $prerelease = "preview$(Get-Date -Format 'yyyyMMdd')"
+          }
+          "module_version=$moduleVersion" >> $env:GITHUB_OUTPUT
+          "prerelease=$prerelease" >> $env:GITHUB_OUTPUT
+
+      - name: Publish preview module to GitHub Packages
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          & ./tools/publishing/Publish-PreviewModule.ps1 `
+            -Owner "${{ github.repository_owner }}" `
+            -Repository "${{ github.event.repository.name }}" `
+            -ModuleVersion "${{ steps.version.outputs.module_version }}" `
+            -Prerelease "${{ steps.version.outputs.prerelease }}"
