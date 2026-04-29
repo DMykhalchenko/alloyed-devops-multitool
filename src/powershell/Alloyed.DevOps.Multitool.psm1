@@ -452,21 +452,10 @@ function Apply-AlloyedRuntimeConfig {
     }
     $profile = $profile.Trim().ToLowerInvariant()
 
-    if ($effective.Decoration.EnableTransparency) {
-        $enableParams = @{
-            SkipSessionMode = (-not [bool]$effective.Session.Enabled)
-            Profile = $profile
-        }
-        if ($QuietTransparency.IsPresent) {
-            $enableParams['Quiet'] = $true
-        }
-        $null = Enable-AlloyedTransparencyMode @enableParams
-    } else {
-        $null = Disable-AlloyedTransparencyMode
-        if ($script:SessionModeEnabled) {
-            $null = Disable-AlloyedSessionMode
-        }
-    }
+    Set-AlloyedSessionState -EnableTransparency:$effective.Decoration.EnableTransparency `
+        -EnableSession:$effective.Session.Enabled `
+        -Profile $profile `
+        -QuietTransparency:$QuietTransparency | Out-Null
 
     return Get-AlloyedTransparencyModeStatus
 }
@@ -481,14 +470,14 @@ function Start-AlloyedSession {
     )
 
     $status = Apply-AlloyedRuntimeConfig -BasePath $BasePath -QuietTransparency:$QuietTransparency
+    $effectiveProfile = if (-not [string]::IsNullOrWhiteSpace($Profile)) { $Profile } else { [string]$status.Profile }
+    $effectiveOutputMode = if (-not [string]::IsNullOrWhiteSpace($OutputMode)) { $OutputMode } else { [string]$status.OutputMode }
 
-    if (-not [string]::IsNullOrWhiteSpace($Profile)) {
-        $status = Set-AlloyedTransparencyProfile -Profile $Profile
-    }
-
-    if (-not [string]::IsNullOrWhiteSpace($OutputMode) -and $status.Enabled) {
-        $status = Enable-AlloyedTransparencyMode -OutputMode $OutputMode -Profile $status.Profile -SkipSessionMode:(-not $status.SessionModeEnabled)
-    }
+    $status = Set-AlloyedSessionState -EnableTransparency:$true `
+        -EnableSession:$true `
+        -Profile $effectiveProfile `
+        -OutputMode $effectiveOutputMode `
+        -QuietTransparency:$QuietTransparency
 
     Write-Host "Alloyed session is ready."
     Write-Host ("  Transparency: {0}" -f $status.Enabled)
@@ -510,14 +499,45 @@ function Stop-AlloyedSession {
     [CmdletBinding()]
     param()
 
-    if ($script:SessionModeEnabled) {
-        $null = Disable-AlloyedSessionMode
-    }
-
-    $null = Disable-AlloyedTransparencyMode
-    [System.Environment]::SetEnvironmentVariable('ALLOYED_TRANSPARENCY_PROFILE', $null, 'Process')
+    Set-AlloyedSessionState -EnableTransparency:$false -EnableSession:$false | Out-Null
 
     Write-Host "Alloyed session stopped."
+    return Get-AlloyedTransparencyModeStatus
+}
+
+function Set-AlloyedSessionState {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)] [bool]$EnableTransparency,
+        [Parameter(Mandatory)] [bool]$EnableSession,
+        [Parameter()] [ValidateSet('minimal','standard','debug')] [string]$Profile = 'standard',
+        [Parameter()] [ValidateSet('Plain','Rich')] [string]$OutputMode,
+        [Parameter()] [switch]$QuietTransparency
+    )
+
+    if (-not $EnableTransparency) {
+        $null = Disable-AlloyedTransparencyMode
+        if ($script:SessionModeEnabled) {
+            $null = Disable-AlloyedSessionMode
+        }
+        [System.Environment]::SetEnvironmentVariable('ALLOYED_TRANSPARENCY_PROFILE', $null, 'Process')
+        return Get-AlloyedTransparencyModeStatus
+    }
+
+    $enableParams = @{
+        SkipSessionMode = (-not $EnableSession)
+        Profile = $Profile
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($OutputMode)) {
+        $enableParams['OutputMode'] = $OutputMode
+    }
+
+    if ($QuietTransparency.IsPresent) {
+        $enableParams['Quiet'] = $true
+    }
+
+    $null = Enable-AlloyedTransparencyMode @enableParams
     return Get-AlloyedTransparencyModeStatus
 }
 
