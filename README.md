@@ -53,7 +53,8 @@ Get-AlloyedTransparencyModeStatus
 Disable-AlloyedTransparencyMode
 ```
 
-When enabled, supported commands emit decorator watch logs for runtime visibility.
+When enabled, supported commands emit structured decorator watch logs for runtime visibility.
+Set `ALLOYED_TRANSPARENCY_VERBOSE=true` to include an extended tag preview in transparency output.
 
 ## Validation
 
@@ -82,9 +83,26 @@ Regenerate wrappers/exports:
 pwsh -NoProfile -File ./tools/ports/Sync-PortsFromCatalog.ps1
 ```
 
+Runtime note:
+- Session mode now supports dynamic wrapper bootstrap from `ports.catalog.json`. This means transparency/session usage does not require running ports sync beforehand for missing wrappers.
+- Runtime execution policy can be tuned via environment variables:
+  - `ALLOYED_RUNTIME_MAX_RETRIES` (default `0`)
+  - `ALLOYED_RUNTIME_RETRY_DELAY_SEC` (default `2`)
+  - `ALLOYED_RUNTIME_EXPONENTIAL_BACKOFF` (`true|false`, default `false`)
+  - `ALLOYED_RUNTIME_PREVIEW` (`true|false`, default `false`)
+
+## Runtime Config API
+
+Public commands:
+- `Initialize-AlloyedRuntimeConfig`
+- `Test-AlloyedRuntimeConfig`
+
+Internal helpers (for example Spectre runtime bootstrap) are intentionally private and not part of public module API.
+
 ## Documentation
 
 - Runtime configuration: `docs/runtime-configuration.md`
+- Legacy transparency quickstart: `docs/legacy-transparency-quickstart.md`
 - Contracts and versioning: `docs/contracts-and-versioning.md`
 - Port architecture ADR: `docs/adr-0001-port-architecture-and-generation-contract.md`
 - Spectre reporting ADR: `docs/adr-0002-spectre-console-reporting-boundary.md`
@@ -104,3 +122,7 @@ pwsh -NoProfile -File ./tools/ports/Sync-PortsFromCatalog.ps1
 - `src/powershell`
 - `tests/dotnet`
 - `tests/powershell`
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE`.

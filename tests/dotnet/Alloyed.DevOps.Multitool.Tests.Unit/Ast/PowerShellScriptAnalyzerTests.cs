@@ -157,4 +157,45 @@ public class PowerShellScriptAnalyzerTests
             .Should()
             .Contain(new[] { "cls", "clear" });
     }
+
+    [Fact]
+    public void AnalyzeContent_Should_NotIncludeLocalFunctionCallsInCommands()
+    {
+        var script = """
+            function Invoke-LocalWork { Get-ChildItem -Path . }
+            Invoke-LocalWork
+            Write-Host "done"
+            """;
+
+        var result = _analyzer.AnalyzeContent("sample.ps1", script);
+
+        var names = result.Commands.Select(c => c.CommandName).ToList();
+        names.Should().NotContain("Invoke-LocalWork",
+            because: "calls to script-local functions are not external command dependencies");
+        names.Should().Contain("Get-ChildItem");
+        names.Should().Contain("Write-Host");
+    }
+
+    [Fact]
+    public void AnalyzeContent_Should_NotIncludeNestedLocalFunctionCalls()
+    {
+        var script = """
+            function Outer {
+                function Inner { Write-Host "inner" }
+                Inner
+                Get-Item -Path .
+            }
+            Outer
+            """;
+
+        var result = _analyzer.AnalyzeContent("sample.ps1", script);
+
+        var names = result.Commands.Select(c => c.CommandName).ToList();
+        names.Should().NotContain("Outer",
+            because: "Outer is defined in the same script");
+        names.Should().NotContain("Inner",
+            because: "Inner is defined in the same script");
+        names.Should().Contain("Write-Host");
+        names.Should().Contain("Get-Item");
+    }
 }

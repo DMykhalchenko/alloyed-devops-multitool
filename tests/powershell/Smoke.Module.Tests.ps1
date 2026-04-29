@@ -30,9 +30,9 @@ if (-not $sessionEnable.Enabled) {
     throw 'Enable-AlloyedSessionMode did not enable session mode.'
 }
 
-$childItemAlias = Get-Alias -Name Get-ChildItem -ErrorAction SilentlyContinue
-if (-not $childItemAlias -or $childItemAlias.Definition -ne 'Get-AlloyedChildItem') {
-    throw 'Session mode did not map Get-ChildItem to Get-AlloyedChildItem.'
+$childItemCommand = Get-Command -Name Get-ChildItem -ErrorAction SilentlyContinue
+if (-not $childItemCommand -or $childItemCommand.CommandType -ne 'Function') {
+    throw 'Session mode did not override Get-ChildItem with decorated function.'
 }
 
 $disableResult = Disable-AlloyedSessionMode

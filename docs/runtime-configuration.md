@@ -100,6 +100,30 @@ Get-AlloyedSessionModeStatus
 Disable-AlloyedSessionMode
 ```
 
+## Interactive configuration (Spectre.Console)
+
+Use the interactive wizard to configure common runtime and UX settings with menu-based prompts:
+
+```powershell
+Initialize-AlloyedRuntimeConfig
+```
+
+Behavior:
+
+- Uses Spectre.Console selection/confirmation prompts.
+- Writes `config/appsettings.json`.
+- Sets process-level runtime environment values for current session:
+  - `ALLOYED_CONSOLE_OUTPUT_MODE`
+  - `ALLOYED_RUNTIME_MAX_RETRIES`
+  - `ALLOYED_RUNTIME_EXPONENTIAL_BACKOFF`
+  - `ALLOYED_RUNTIME_PREVIEW`
+
+To inspect effective settings:
+
+```powershell
+Test-AlloyedRuntimeConfig
+```
+
 ## Transparency watch mode
 
 Enable from config:

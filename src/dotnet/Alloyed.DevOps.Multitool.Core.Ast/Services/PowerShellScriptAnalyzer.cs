@@ -36,6 +36,12 @@ public sealed class PowerShellScriptAnalyzer : IScriptAnalyzer
                 Severity: ParseDiagnosticSeverity.Warning))
             .ToList();
 
+        var localFunctionNames = ast
+            .FindAll(node => node is FunctionDefinitionAst, searchNestedScriptBlocks: true)
+            .Cast<FunctionDefinitionAst>()
+            .Select(f => f.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         var commandNodes = ast.FindAll(node => node is CommandAst, searchNestedScriptBlocks: true);
 
         var commands = commandNodes
@@ -71,6 +77,7 @@ public sealed class PowerShellScriptAnalyzer : IScriptAnalyzer
                     IsQualified: moduleName is not null);
             })
             .OfType<CommandUsage>()
+            .Where(c => !localFunctionNames.Contains(c.CommandName))
             .ToList();
 
         return new ScriptAnalysisResult(logicalPath, commands, diagnostics, content);

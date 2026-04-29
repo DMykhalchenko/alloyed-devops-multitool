@@ -2,9 +2,11 @@ $script:AssemblyLoaded = $false
 $script:SessionModeEnabled = $false
 $script:SessionModeAliases = @()
 $script:SessionModeAliasBackup = @{}
+$script:SessionModeCommandBackup = @{}
 $script:DecorationPipeline = $null
 $script:TransparencyModeOverride = $null
 $script:ConsoleOutputModeOverride = $null
+$script:LastRuntimeExecution = $null
 
 function Initialize-AlloyedHostAssembly {
     if ($script:AssemblyLoaded) { return }
@@ -94,12 +96,388 @@ function Resolve-AlloyedConsoleOutputMode {
     return [Alloyed.DevOps.Multitool.Host.PowerShell.Services.ConsoleOutputMode]::Plain
 }
 
+function Get-AlloyedPortsCatalogPath {
+    $repoRoot = Split-Path -Parent $PSScriptRoot
+    return Join-Path $repoRoot 'tools/ports/ports.catalog.json'
+}
+
+function Get-AlloyedNativeCommandMap {
+    $catalogPath = Get-AlloyedPortsCatalogPath
+    $nativeMap = @{}
+
+    if (-not (Test-Path -LiteralPath $catalogPath)) {
+        return $nativeMap
+    }
+
+    $entries = @(Get-Content -Raw -LiteralPath $catalogPath | ConvertFrom-Json)
+    foreach ($entry in $entries) {
+        if ([string]::IsNullOrWhiteSpace($entry.command) -or [string]::IsNullOrWhiteSpace($entry.native)) {
+            continue
+        }
+
+        $nativeMap[[string]$entry.command] = [string]$entry.native
+        foreach ($alias in @($entry.aliases)) {
+            if (-not [string]::IsNullOrWhiteSpace($alias)) {
+                $nativeMap[[string]$alias] = [string]$entry.native
+            }
+        }
+    }
+
+    return $nativeMap
+}
+
+function Get-AlloyedProjectRoot {
+    return Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+}
+
+function Get-AlloyedRuntimeConfigFilePath {
+    param(
+        [string]$BasePath = (Get-Location).Path
+    )
+
+    return Join-Path $BasePath 'config/appsettings.json'
+}
+
+function Initialize-AlloyedInternalSpectreRuntime {
+    [CmdletBinding()]
+    param()
+
+    Initialize-AlloyedHostAssembly
+
+    if ($null -ne ('Spectre.Console.AnsiConsole' -as [type])) {
+        return
+    }
+
+    $hostAssemblyPath = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap].Assembly.Location
+    if ([string]::IsNullOrWhiteSpace($hostAssemblyPath)) {
+        throw "Unable to resolve Host.PowerShell assembly location for Spectre bootstrap."
+    }
+
+    $hostAssemblyDir = Split-Path -Parent $hostAssemblyPath
+    $spectreDllPath = Join-Path $hostAssemblyDir 'Spectre.Console.dll'
+
+    if (-not (Test-Path -LiteralPath $spectreDllPath)) {
+        throw "Spectre.Console assembly was not found at '$spectreDllPath'. Build host project first: dotnet build src/dotnet/Alloyed.DevOps.Multitool.Host.PowerShell -c Debug"
+    }
+
+    Add-Type -Path $spectreDllPath
+
+    if ($null -eq ('Spectre.Console.AnsiConsole' -as [type])) {
+        throw "Spectre.Console types are still unavailable after loading '$spectreDllPath'."
+    }
+}
+
+function Read-AlloyedRuntimeConfigFile {
+    param(
+        [Parameter(Mandatory)] [string]$Path
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return @{
+            Alloyed = @{
+                Runtime = @{}
+                Session = @{}
+                Decoration = @{}
+                Mocking = @{}
+                Catalog = @{}
+            }
+        }
+    }
+
+    return Get-Content -Raw -LiteralPath $Path | ConvertFrom-Json -AsHashtable
+}
+
+function Write-AlloyedRuntimeConfigFile {
+    param(
+        [Parameter(Mandatory)] [string]$Path,
+        [Parameter(Mandatory)] [hashtable]$Config
+    )
+
+    $dir = Split-Path -Parent $Path
+    if (-not (Test-Path -LiteralPath $dir)) {
+        New-Item -Path $dir -ItemType Directory -Force | Out-Null
+    }
+
+    $json = $Config | ConvertTo-Json -Depth 10
+    Set-Content -LiteralPath $Path -Value $json
+}
+
+function Initialize-AlloyedWrappersFromCatalog {
+    [CmdletBinding()]
+    param()
+
+    $catalogPath = Get-AlloyedPortsCatalogPath
+    if (-not (Test-Path -LiteralPath $catalogPath)) {
+        return
+    }
+
+    $entries = @(Get-Content -Raw -LiteralPath $catalogPath | ConvertFrom-Json)
+    foreach ($entry in $entries) {
+        $wrapperName = [string]$entry.wrapper
+        $operation = [string]$entry.command
+        $native = [string]$entry.native
+
+        if ([string]::IsNullOrWhiteSpace($wrapperName) -or [string]::IsNullOrWhiteSpace($operation) -or [string]::IsNullOrWhiteSpace($native)) {
+            continue
+        }
+
+        if (Get-Command -Name $wrapperName -ErrorAction SilentlyContinue) {
+            continue
+        }
+
+        $wrapperBody = if ($operation -eq 'Clear-Host') {
+            "function global:$wrapperName { Invoke-AlloyedDecoratedCommand -Operation '$operation' -Parameters @{} -Action { $native } }"
+        } else {
+            "function global:$wrapperName { Invoke-AlloyedDecoratedCommand -Operation '$operation' -Arguments `$args -InputObjects @(`$input) -Action { $native @args } }"
+        }
+
+        $null = Invoke-Expression $wrapperBody
+    }
+}
+
+function Initialize-AlloyedRuntimeConfig {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter()] [string]$BasePath = (Get-AlloyedProjectRoot),
+        [Parameter()] [switch]$Force
+    )
+
+    Initialize-AlloyedInternalSpectreRuntime
+
+    $configPath = Get-AlloyedRuntimeConfigFilePath -BasePath $BasePath
+    if ((Test-Path -LiteralPath $configPath) -and -not $Force.IsPresent) {
+        throw "Config already exists at '$configPath'. Use -Force to overwrite."
+    }
+
+    $outputPrompt = [Spectre.Console.SelectionPrompt[string]]::new()
+    $null = $outputPrompt.Title("Select [green]console output mode[/]:")
+    $null = $outputPrompt.AddChoices([string[]]@('Plain', 'Rich'))
+    $outputMode = [Spectre.Console.AnsiConsole]::Prompt[string]($outputPrompt)
+
+    $transparencyPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable [yellow]transparency[/] by default?")
+    $enableTransparency = [Spectre.Console.AnsiConsole]::Prompt[bool]($transparencyPrompt)
+
+    $sessionPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable [yellow]session mode[/] by default?")
+    $enableSession = [Spectre.Console.AnsiConsole]::Prompt[bool]($sessionPrompt)
+
+    $retryPrompt = [Spectre.Console.SelectionPrompt[string]]::new()
+    $null = $retryPrompt.Title("Select [green]runtime retry policy[/]:")
+    $null = $retryPrompt.AddChoices([string[]]@('0', '1', '2', '3'))
+    $maxRetriesRaw = [Spectre.Console.AnsiConsole]::Prompt[string]($retryPrompt)
+    $maxRetries = [int]$maxRetriesRaw
+
+    $backoffPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable [yellow]exponential backoff[/]?")
+    $enableBackoff = [Spectre.Console.AnsiConsole]::Prompt[bool]($backoffPrompt)
+
+    $previewPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable runtime [yellow]preview logs[/]?")
+    $enablePreview = [Spectre.Console.AnsiConsole]::Prompt[bool]($previewPrompt)
+
+    $runtimeConfig = @{
+        Alloyed = @{
+            Runtime = @{
+                DefaultOutputPath = 'out'
+            }
+            Session = @{
+                Enabled = $enableSession
+            }
+            Decoration = @{
+                EnableErrorHandling = $true
+                EnableObservability = $true
+                EnableCorrelation = $true
+                EnableTransparency = $enableTransparency
+            }
+            Mocking = @{
+                Enabled = $false
+                Mode = 'InMemory'
+            }
+            Catalog = @{
+                SourcePath = 'tools/ports/ports.catalog.json'
+            }
+        }
+    }
+
+    if ($PSCmdlet.ShouldProcess($configPath, 'Write runtime config file')) {
+        Write-AlloyedRuntimeConfigFile -Path $configPath -Config $runtimeConfig
+        [System.Environment]::SetEnvironmentVariable('ALLOYED_CONSOLE_OUTPUT_MODE', $outputMode, 'Process')
+        [System.Environment]::SetEnvironmentVariable('ALLOYED_RUNTIME_MAX_RETRIES', [string]$maxRetries, 'Process')
+        [System.Environment]::SetEnvironmentVariable('ALLOYED_RUNTIME_EXPONENTIAL_BACKOFF', [string]$enableBackoff, 'Process')
+        [System.Environment]::SetEnvironmentVariable('ALLOYED_RUNTIME_PREVIEW', [string]$enablePreview, 'Process')
+    }
+
+    $table = [Spectre.Console.Table]::new()
+    $null = $table.AddColumn('Setting')
+    $null = $table.AddColumn('Value')
+    $null = $table.AddRow('ConfigPath', $configPath)
+    $null = $table.AddRow('OutputMode (process)', $outputMode)
+    $null = $table.AddRow('EnableTransparency', [string]$enableTransparency)
+    $null = $table.AddRow('SessionEnabled', [string]$enableSession)
+    $null = $table.AddRow('RuntimeMaxRetries (process)', [string]$maxRetries)
+    $null = $table.AddRow('RuntimeExponentialBackoff (process)', [string]$enableBackoff)
+    $null = $table.AddRow('RuntimePreview (process)', [string]$enablePreview)
+    [Spectre.Console.AnsiConsole]::Write($table)
+
+    [pscustomobject]@{
+        ConfigPath = $configPath
+        OutputMode = $outputMode
+        EnableTransparency = $enableTransparency
+        SessionEnabled = $enableSession
+        RuntimeMaxRetries = $maxRetries
+        RuntimeExponentialBackoff = $enableBackoff
+        RuntimePreview = $enablePreview
+    }
+}
+
+function Test-AlloyedRuntimeConfig {
+    [CmdletBinding()]
+    param(
+        [Parameter()] [string]$BasePath = (Get-Location).Path
+    )
+
+    $effective = Get-AlloyedRuntimeConfiguration -BasePath $BasePath
+    $policy = Get-AlloyedRuntimeExecutionPolicy
+
+    [pscustomobject]@{
+        BasePath = $BasePath
+        ConfigPath = Get-AlloyedRuntimeConfigFilePath -BasePath $BasePath
+        RuntimeDefaultOutputPath = $effective.Runtime.DefaultOutputPath
+        SessionEnabled = $effective.Session.Enabled
+        TransparencyEnabled = $effective.Decoration.EnableTransparency
+        ConsoleOutputMode = (Resolve-AlloyedConsoleOutputMode).ToString()
+        RuntimeMaxRetries = $policy.MaxRetries
+        RuntimeRetryDelaySec = $policy.RetryDelaySec
+        RuntimeExponentialBackoff = $policy.ExponentialBackoff
+        RuntimePreview = $policy.Preview
+    }
+}
+
 function Get-AlloyedConsoleReporter {
     Initialize-AlloyedHostAssembly
 
     $isInteractive = -not [System.Console]::IsOutputRedirected
     $mode = Resolve-AlloyedConsoleOutputMode
     return [Alloyed.DevOps.Multitool.Host.PowerShell.Services.ConsoleReporterFactory]::Create($mode, $isInteractive, $null)
+}
+
+function Get-AlloyedRuntimeExecutionPolicy {
+    [CmdletBinding()]
+    param()
+
+    $maxRetries = 0
+    $retryDelaySec = 2
+    $exponentialBackoff = $false
+    $preview = $false
+    $timeoutSec = 0
+
+    $rawRetries = [System.Environment]::GetEnvironmentVariable('ALLOYED_RUNTIME_MAX_RETRIES')
+    if ([int]::TryParse($rawRetries, [ref]$maxRetries) -and $maxRetries -ge 0) {
+        $maxRetries = [int]$maxRetries
+    } else {
+        $maxRetries = 0
+    }
+
+    $rawDelay = [System.Environment]::GetEnvironmentVariable('ALLOYED_RUNTIME_RETRY_DELAY_SEC')
+    if ([int]::TryParse($rawDelay, [ref]$retryDelaySec) -and $retryDelaySec -ge 0) {
+        $retryDelaySec = [int]$retryDelaySec
+    } else {
+        $retryDelaySec = 2
+    }
+
+    $rawBackoff = [System.Environment]::GetEnvironmentVariable('ALLOYED_RUNTIME_EXPONENTIAL_BACKOFF')
+    if ([bool]::TryParse($rawBackoff, [ref]$exponentialBackoff)) {
+        $exponentialBackoff = [bool]$exponentialBackoff
+    } else {
+        $exponentialBackoff = $false
+    }
+
+    $rawPreview = [System.Environment]::GetEnvironmentVariable('ALLOYED_RUNTIME_PREVIEW')
+    if ([bool]::TryParse($rawPreview, [ref]$preview)) {
+        $preview = [bool]$preview
+    } else {
+        $preview = $false
+    }
+
+    $rawTimeout = [System.Environment]::GetEnvironmentVariable('ALLOYED_RUNTIME_TIMEOUT_SEC')
+    if ([int]::TryParse($rawTimeout, [ref]$timeoutSec) -and $timeoutSec -ge 0) {
+        $timeoutSec = [int]$timeoutSec
+    } else {
+        $timeoutSec = 0
+    }
+
+    [pscustomobject]@{
+        MaxRetries = $maxRetries
+        RetryDelaySec = $retryDelaySec
+        ExponentialBackoff = $exponentialBackoff
+        Preview = $preview
+        TimeoutSec = $timeoutSec
+    }
+}
+
+function Invoke-AlloyedCommandRuntime {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)] [string]$Operation,
+        [Parameter(Mandatory)] [scriptblock]$Action,
+        [Parameter()] [object[]]$Arguments = @(),
+        [Parameter()] [object[]]$InputObjects = @()
+    )
+
+    $policy = Get-AlloyedRuntimeExecutionPolicy
+    $attempt = 0
+    $delaySec = [int]$policy.RetryDelaySec
+
+    while ($true) {
+        $attempt++
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+
+        try {
+            if ($policy.Preview) {
+                Write-Host ("[alloyed-runtime] phase=attempt op={0} attempt={1}" -f $Operation, $attempt)
+            }
+
+            $output = if ($InputObjects.Count -gt 0) {
+                $InputObjects | & $Action @Arguments
+            } else {
+                & $Action @Arguments
+            }
+
+            $sw.Stop()
+            $script:LastRuntimeExecution = [pscustomobject]@{
+                Operation = $Operation
+                Success = $true
+                Attempts = $attempt
+                DurationMs = $sw.ElapsedMilliseconds
+                TimeoutSec = [int]$policy.TimeoutSec
+                MaxRetries = [int]$policy.MaxRetries
+            }
+
+            return $output
+        } catch {
+            $sw.Stop()
+            $canRetry = $attempt -le [int]$policy.MaxRetries
+
+            if (-not $canRetry) {
+                $script:LastRuntimeExecution = [pscustomobject]@{
+                    Operation = $Operation
+                    Success = $false
+                    Attempts = $attempt
+                    DurationMs = $sw.ElapsedMilliseconds
+                    TimeoutSec = [int]$policy.TimeoutSec
+                    MaxRetries = [int]$policy.MaxRetries
+                    Error = $_.Exception.Message
+                }
+
+                throw
+            }
+
+            if ($delaySec -gt 0) {
+                Start-Sleep -Seconds $delaySec
+            }
+
+            if ($policy.ExponentialBackoff) {
+                $delaySec = [Math]::Min($delaySec * 2, 300)
+            }
+        }
+    }
 }
 
 function Write-AlloyedPipelineResultSummary {
@@ -132,7 +510,7 @@ function Write-AlloyedPipelineResultSummary {
             default { [Alloyed.DevOps.Multitool.Host.PowerShell.Contracts.ConsoleMessageLevel]::Info; break }
         }
 
-        $reporter.WriteMessage($level, "[{0}] {1}" -f $diagnostic.Code, $diagnostic.Message)
+        $reporter.WriteMessage($level, ("[{0}] {1}" -f @($diagnostic.Code, $diagnostic.Message)))
     }
 }
 
@@ -151,6 +529,7 @@ function Invoke-AlloyedDecoratedCommand {
     $tags = [System.Collections.Generic.Dictionary[string,string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $tags['operation'] = $Operation
     $tags['enableTransparency'] = (Resolve-AlloyedTransparencyEnabled).ToString().ToLowerInvariant()
+    $tags['transparencyVerbose'] = [System.Environment]::GetEnvironmentVariable('ALLOYED_TRANSPARENCY_VERBOSE')
 
     foreach ($key in $Parameters.Keys) {
         $value = $Parameters[$key]
@@ -164,11 +543,7 @@ function Invoke-AlloyedDecoratedCommand {
 
     $context = [Alloyed.DevOps.Multitool.Core.Decoration.Models.DecorationContext]::new($Operation, $tags)
     $invoke = [System.Func[object]] {
-        if ($InputObjects.Count -gt 0) {
-            return $InputObjects | & $Action @Arguments
-        }
-
-        return & $Action @Arguments
+        return Invoke-AlloyedCommandRuntime -Operation $Operation -Action $Action -Arguments $Arguments -InputObjects $InputObjects
     }
     return $script:DecorationPipeline.Execute[object]($context, $invoke)
 }
@@ -361,6 +736,7 @@ function Get-AlloyedRuntimeConfiguration {
     [pscustomobject]@{
         Runtime = [pscustomobject]@{
             FailOnSeverity = if ($null -eq $configuration.Runtime.FailOnSeverity) { $null } else { $configuration.Runtime.FailOnSeverity.ToString() }
+            DefaultOutputPath = $configuration.Runtime.DefaultOutputPath
         }
         Session = [pscustomobject]@{
             Enabled = $configuration.Session.Enabled
@@ -385,6 +761,7 @@ function Enable-AlloyedSessionMode {
     )
 
     Initialize-AlloyedHostAssembly
+    Initialize-AlloyedWrappersFromCatalog
 
     if ($script:SessionModeEnabled -and -not $Force.IsPresent) {
         return Get-AlloyedSessionModeStatus
@@ -392,45 +769,66 @@ function Enable-AlloyedSessionMode {
 
     $catalog = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateCatalog()
     $mappings = $catalog.GetMappings()
+    $nativeMap = Get-AlloyedNativeCommandMap
 
     $applied = New-Object System.Collections.Generic.List[string]
     $skipped = New-Object System.Collections.Generic.List[string]
     $script:SessionModeAliasBackup = @{}
+    $script:SessionModeCommandBackup = @{}
 
     foreach ($entry in ($mappings.GetEnumerator() | Sort-Object Key)) {
         $name = $entry.Key
-        $wrapper = $entry.Value
-
-        $wrapperCommand = Get-Command -Name $wrapper -ErrorAction SilentlyContinue
         $sourceCommand = Get-Command -Name $name -ErrorAction SilentlyContinue
-        if (-not $wrapperCommand -or -not $sourceCommand) {
+        if (-not $sourceCommand) {
             $skipped.Add($name)
             continue
         }
 
-        $existingAlias = Get-Alias -Name $name -ErrorAction SilentlyContinue
-        $previousDefinition = if ($existingAlias) { $existingAlias.Definition } else { $null }
-        if (
-            $existingAlias -and
-            (($existingAlias.Options -band [System.Management.Automation.ScopedItemOptions]::AllScope) -ne [System.Management.Automation.ScopedItemOptions]::None)
-        ) {
-            $skipped.Add($name)
-            continue
+        $nativeCommand = $null
+        if ($nativeMap.ContainsKey($name)) {
+            $nativeCommand = [string]$nativeMap[$name]
+        } elseif ($sourceCommand.Source) {
+            $nativeCommand = "{0}\{1}" -f $sourceCommand.Source, $sourceCommand.Name
+        } else {
+            $nativeCommand = [string]$sourceCommand.Name
         }
 
         try {
-            if ($existingAlias) {
-                Set-Alias -Name $name -Value $wrapper -Scope Global -Option $existingAlias.Options -Force
-            } else {
-                Set-Alias -Name $name -Value $wrapper -Scope Global -Force
+            $existingFunction = Get-Command -Name $name -CommandType Function -ErrorAction SilentlyContinue
+            $existingAlias = Get-Alias -Name $name -ErrorAction SilentlyContinue
+
+            $script:SessionModeCommandBackup[$name] = [pscustomobject]@{
+                AliasDefinition = if ($existingAlias) { $existingAlias.Definition } else { $null }
+                AliasOptions = if ($existingAlias) { $existingAlias.Options } else { $null }
+                FunctionDefinition = if ($existingFunction) { (Get-Content -LiteralPath ("function:{0}" -f $name) -ErrorAction SilentlyContinue) } else { $null }
             }
+
+            if ($existingAlias) {
+                Remove-Item -LiteralPath ("Alias:{0}" -f $name) -Force -ErrorAction SilentlyContinue
+            }
+
+            $functionBody = if ($name -eq 'Clear-Host') {
+                "function global:$name { Invoke-AlloyedDecoratedCommand -Operation '$name' -Parameters @{} -Action { $nativeCommand } }"
+            } else {
+                "function global:$name { Invoke-AlloyedDecoratedCommand -Operation '$name' -Arguments `$args -InputObjects @(`$input) -Action { $nativeCommand @args } }"
+            }
+
+            $null = Invoke-Expression $functionBody
+
+            if ($existingAlias) {
+                $script:SessionModeAliasBackup[$name] = $existingAlias.Definition
+            } else {
+                $script:SessionModeAliasBackup[$name] = $null
+            }
+
+            $applied.Add($name)
         } catch {
+            if ($script:SessionModeCommandBackup.ContainsKey($name)) {
+                $script:SessionModeCommandBackup.Remove($name)
+            }
             $skipped.Add($name)
             continue
         }
-
-        $script:SessionModeAliasBackup[$name] = $previousDefinition
-        $applied.Add($name)
     }
 
     $script:SessionModeAliases = @($applied.ToArray())
@@ -452,18 +850,27 @@ function Disable-AlloyedSessionMode {
     }
 
     foreach ($name in @($script:SessionModeAliases)) {
-        $prior = $script:SessionModeAliasBackup[$name]
+        Remove-Item -LiteralPath ("Function:{0}" -f $name) -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath ("Alias:{0}" -f $name) -Force -ErrorAction SilentlyContinue
+
+        $prior = $script:SessionModeCommandBackup[$name]
         if ($null -eq $prior) {
-            Microsoft.PowerShell.Management\Remove-Item -LiteralPath "Alias:$name" -Force -ErrorAction SilentlyContinue
             continue
         }
 
-        Set-Alias -Name $name -Value $prior -Scope Global -Force
+        if (-not [string]::IsNullOrWhiteSpace($prior.FunctionDefinition)) {
+            Set-Item -LiteralPath ("Function:global:{0}" -f $name) -Value $prior.FunctionDefinition -Force
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($prior.AliasDefinition)) {
+            Set-Alias -Name $name -Value $prior.AliasDefinition -Scope Global -Force
+        }
     }
 
     $script:SessionModeEnabled = $false
     $script:SessionModeAliases = @()
     $script:SessionModeAliasBackup = @{}
+    $script:SessionModeCommandBackup = @{}
 
     Get-AlloyedSessionModeStatus
 }

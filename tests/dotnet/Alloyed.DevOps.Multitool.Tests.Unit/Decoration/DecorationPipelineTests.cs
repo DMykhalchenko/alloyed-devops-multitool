@@ -42,6 +42,7 @@ public class DecorationPipelineTests
         var context = new DecorationContext("watch-test", new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             [TransparencyDecorator.EnableTransparencyTag] = "true",
+            [TransparencyDecorator.VerboseTransparencyTag] = "true",
             ["apiToken"] = "super-secret-value",
             ["resource"] = "bucket-a",
         });
@@ -51,6 +52,10 @@ public class DecorationPipelineTests
         result.Should().Be(42);
         sink.Events.Should().Contain(e => e.Decorator == nameof(TransparencyDecorator) && e.Stage == DecorationStage.Enter);
         sink.Events.Should().Contain(e => e.Decorator == nameof(TransparencyDecorator) && e.Stage == DecorationStage.Exit);
+        sink.Events.Should().Contain(e =>
+            e.Decorator == nameof(TransparencyDecorator) &&
+            e.Message != null &&
+            e.Message.Contains("tags.count=", StringComparison.Ordinal));
         sink.Events.Should().Contain(e =>
             e.Decorator == nameof(TransparencyDecorator) &&
             e.Message != null &&
