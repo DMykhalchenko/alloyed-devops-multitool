@@ -1,4 +1,4 @@
-function Apply-AlloyedRuntimeConfig {
+function Set-AlloyedRuntimeConfig {
     [CmdletBinding()]
     param(
         [Parameter()] [string]$BasePath = (Get-AlloyedProjectRoot),
@@ -29,7 +29,7 @@ function Start-AlloyedSession {
         [Parameter()] [switch]$QuietTransparency
     )
 
-    $status = Apply-AlloyedRuntimeConfig -BasePath $BasePath -QuietTransparency:$QuietTransparency
+    $status = Set-AlloyedRuntimeConfig -BasePath $BasePath -QuietTransparency:$QuietTransparency
     $effectiveProfile = if (-not [string]::IsNullOrWhiteSpace($Profile)) { $Profile } else { [string]$status.Profile }
     $effectiveOutputMode = if (-not [string]::IsNullOrWhiteSpace($OutputMode)) { $OutputMode } else { [string]$status.OutputMode }
 

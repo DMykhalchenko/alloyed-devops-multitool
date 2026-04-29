@@ -162,7 +162,7 @@ function Initialize-AlloyedRuntimeConfig {
         [System.Environment]::SetEnvironmentVariable('ALLOYED_RUNTIME_PREVIEW', [string]$enablePreview, 'Process')
 
         if ($ApplyToCurrentSession) {
-            $null = Apply-AlloyedRuntimeConfig -BasePath $BasePath
+            $null = Set-AlloyedRuntimeConfig -BasePath $BasePath
         }
     }
 

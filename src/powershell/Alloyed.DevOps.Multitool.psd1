@@ -26,7 +26,7 @@
         'Start-AlloyedSession',
         'Stop-AlloyedSession',
         'Initialize-AlloyedRuntimeConfig',
-        'Apply-AlloyedRuntimeConfig',
+        'Set-AlloyedRuntimeConfig',
         'Test-AlloyedRuntimeConfig'
     )
     CmdletsToExport = @()

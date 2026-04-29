@@ -95,7 +95,7 @@ Primary runtime commands:
 Configuration commands:
 
 - `Initialize-AlloyedRuntimeConfig`
-- `Apply-AlloyedRuntimeConfig`
+- `Set-AlloyedRuntimeConfig`
 - `Test-AlloyedRuntimeConfig`
 
 Transform commands:
