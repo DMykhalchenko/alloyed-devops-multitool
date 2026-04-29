@@ -37,6 +37,12 @@ Run a legacy script with decorators in one command:
 Invoke-AlloyedScript -ScriptPath ./scripts/legacy.ps1
 ```
 
+Bootstrap current session from config (recommended for iterative local work):
+
+```powershell
+Start-AlloyedLegacySession
+```
+
 Manual mode (if you want full session control):
 
 ```powershell
@@ -76,6 +82,7 @@ flowchart TB
 Primary runtime commands:
 
 - `Invoke-AlloyedScript`
+- `Start-AlloyedLegacySession`
 - `Enable-AlloyedTransparencyMode`
 - `Disable-AlloyedTransparencyMode`
 - `Set-AlloyedTransparencyProfile`

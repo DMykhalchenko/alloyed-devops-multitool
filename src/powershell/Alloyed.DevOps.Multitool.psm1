@@ -478,6 +478,41 @@ function Apply-AlloyedRuntimeConfig {
     return Get-AlloyedTransparencyModeStatus
 }
 
+function Start-AlloyedLegacySession {
+    [CmdletBinding()]
+    param(
+        [Parameter()] [string]$BasePath = (Get-AlloyedProjectRoot),
+        [Parameter()] [ValidateSet('minimal','standard','debug')] [string]$Profile,
+        [Parameter()] [ValidateSet('Plain','Rich')] [string]$OutputMode,
+        [Parameter()] [switch]$QuietTransparency
+    )
+
+    $status = Apply-AlloyedRuntimeConfig -BasePath $BasePath -QuietTransparency:$QuietTransparency
+
+    if (-not [string]::IsNullOrWhiteSpace($Profile)) {
+        $status = Set-AlloyedTransparencyProfile -Profile $Profile
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($OutputMode) -and $status.Enabled) {
+        $status = Enable-AlloyedTransparencyMode -OutputMode $OutputMode -Profile $status.Profile -SkipSessionMode:(-not $status.SessionModeEnabled)
+    }
+
+    Write-Host "Alloyed legacy session is ready."
+    Write-Host ("  Transparency: {0}" -f $status.Enabled)
+    Write-Host ("  SessionMode : {0}" -f $status.SessionModeEnabled)
+    Write-Host ("  Profile     : {0}" -f $status.Profile)
+    Write-Host ("  OutputMode  : {0}" -f $status.OutputMode)
+    Write-Host "Next:"
+    Write-Host "  1) Run your legacy script"
+    Write-Host "     ./scripts/legacy.ps1"
+    Write-Host "  2) Check status"
+    Write-Host "     Get-AlloyedTransparencyModeStatus"
+    Write-Host "  3) Stop interception (if needed)"
+    Write-Host "     Disable-AlloyedSessionMode; Disable-AlloyedTransparencyMode"
+
+    return $status
+}
+
 function Set-AlloyedTransparencyProfile {
     [CmdletBinding()]
     param(
