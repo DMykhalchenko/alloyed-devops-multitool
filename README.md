@@ -41,6 +41,8 @@ Bootstrap current session from config (recommended for iterative local work):
 
 ```powershell
 Start-AlloyedLegacySession
+# ...run scripts...
+Stop-AlloyedLegacySession
 ```
 
 Manual mode (if you want full session control):
@@ -83,6 +85,7 @@ Primary runtime commands:
 
 - `Invoke-AlloyedScript`
 - `Start-AlloyedLegacySession`
+- `Stop-AlloyedLegacySession`
 - `Enable-AlloyedTransparencyMode`
 - `Disable-AlloyedTransparencyMode`
 - `Set-AlloyedTransparencyProfile`

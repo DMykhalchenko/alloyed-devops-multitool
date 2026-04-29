@@ -513,6 +513,21 @@ function Start-AlloyedLegacySession {
     return $status
 }
 
+function Stop-AlloyedLegacySession {
+    [CmdletBinding()]
+    param()
+
+    if ($script:SessionModeEnabled) {
+        $null = Disable-AlloyedSessionMode
+    }
+
+    $null = Disable-AlloyedTransparencyMode
+    [System.Environment]::SetEnvironmentVariable('ALLOYED_TRANSPARENCY_PROFILE', $null, 'Process')
+
+    Write-Host "Alloyed legacy session stopped."
+    return Get-AlloyedTransparencyModeStatus
+}
+
 function Set-AlloyedTransparencyProfile {
     [CmdletBinding()]
     param(
