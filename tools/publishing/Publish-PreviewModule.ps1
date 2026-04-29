@@ -42,6 +42,8 @@ New-Item -ItemType Directory -Path $stagedLibPath -Force | Out-Null
 
 Copy-Item -LiteralPath $sourceManifestPath -Destination $stagedManifestPath -Force
 Copy-Item -LiteralPath $sourceModulePath -Destination (Join-Path $publishRoot "$ModuleName.psm1") -Force
+Copy-Item -Path (Join-Path $moduleSourcePath "Public") -Destination (Join-Path $publishRoot "Public") -Recurse -Force
+Copy-Item -Path (Join-Path $moduleSourcePath "Internal") -Destination (Join-Path $publishRoot "Internal") -Recurse -Force
 
 Write-Host "[2/5] Building .NET host assemblies"
 if (-not $SkipBuild.IsPresent) {
