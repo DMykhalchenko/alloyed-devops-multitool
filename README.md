@@ -1,6 +1,7 @@
 # alloyed-devops-multitool
 
 [![CI](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/ci.yml/badge.svg)](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/ci.yml)
+[![Integration+Publish](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/integration-publish.yml/badge.svg)](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/integration-publish.yml)
 
 `alloyed-devops-multitool` is a PowerShell modernization toolkit:
 
@@ -157,6 +158,7 @@ pwsh -NoProfile -File ./dev.ps1 -Stage smoke
 
 - Runtime configuration: `docs/runtime-configuration.md`
 - Legacy transparency quickstart: `docs/legacy-transparency-quickstart.md`
+- Module access model: `docs/module-access-model.md`
 - Contracts and versioning: `docs/contracts-and-versioning.md`
 - Port architecture ADR: `docs/adr-0001-port-architecture-and-generation-contract.md`
 - Spectre reporting ADR: `docs/adr-0002-spectre-console-reporting-boundary.md`
