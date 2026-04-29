@@ -20,6 +20,7 @@
         'Enable-AlloyedTransparencyMode',
         'Disable-AlloyedTransparencyMode',
         'Set-AlloyedTransparencyProfile',
+        'Get-AlloyedSessionState',
         'Get-AlloyedTransparencyModeStatus',
         'Invoke-AlloyedScript',
         'Start-AlloyedSession',

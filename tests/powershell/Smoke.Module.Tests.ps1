@@ -111,6 +111,19 @@ if ($startedSession.Profile -ne 'minimal') {
     throw "Start-AlloyedSession did not apply minimal profile. Actual='$($startedSession.Profile)'"
 }
 
+$state = Get-AlloyedSessionState -BasePath $sessionConfigBasePath
+if (-not $state.CurrentSessionModeEnabled -or -not $state.CurrentTransparencyEnabled) {
+    throw 'Get-AlloyedSessionState does not reflect active session/transparency state.'
+}
+if ($state.CurrentProfile -ne 'minimal') {
+    throw "Get-AlloyedSessionState profile mismatch. Actual='$($state.CurrentProfile)'"
+}
+
+$updatedProfile = Set-AlloyedTransparencyProfile -Profile debug
+if ($updatedProfile.Profile -ne 'debug') {
+    throw "Set-AlloyedTransparencyProfile did not switch profile to debug. Actual='$($updatedProfile.Profile)'"
+}
+
 $stoppedSession = Stop-AlloyedSession
 if ($stoppedSession.Enabled) {
     throw 'Stop-AlloyedSession did not disable transparency mode.'

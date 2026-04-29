@@ -551,6 +551,29 @@ function Set-AlloyedTransparencyProfile {
     return Get-AlloyedTransparencyModeStatus
 }
 
+function Get-AlloyedSessionState {
+    [CmdletBinding()]
+    param(
+        [Parameter()] [string]$BasePath = (Get-AlloyedProjectRoot)
+    )
+
+    $runtime = Get-AlloyedRuntimeConfiguration -BasePath $BasePath
+    $transparency = Get-AlloyedTransparencyModeStatus
+    $session = Get-AlloyedSessionModeStatus
+
+    [pscustomobject]@{
+        RuntimeConfigPath = Get-AlloyedRuntimeConfigFilePath -BasePath $BasePath
+        RuntimeSessionEnabled = [bool]$runtime.Session.Enabled
+        RuntimeTransparencyEnabled = [bool]$runtime.Decoration.EnableTransparency
+        RuntimeTransparencyProfile = [string]$runtime.Decoration.TransparencyProfile
+        CurrentSessionModeEnabled = [bool]$session.Enabled
+        CurrentTransparencyEnabled = [bool]$transparency.Enabled
+        CurrentProfile = [string]$transparency.Profile
+        CurrentOutputMode = [string]$transparency.OutputMode
+        CurrentVerbose = [string]$transparency.Verbose
+    }
+}
+
 function Get-AlloyedConsoleReporter {
     Initialize-AlloyedHostAssembly
 
