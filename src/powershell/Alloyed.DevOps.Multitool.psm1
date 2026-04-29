@@ -312,6 +312,13 @@ function Initialize-AlloyedRuntimeConfig {
 
             $previewPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable runtime preview logs?")
             $enablePreview = [Spectre.Console.AnsiConsole]::Prompt[bool]($previewPrompt)
+
+            $profilePrompt = [Spectre.Console.SelectionPrompt[string]]::new()
+            $profilePrompt.Title = "Select transparency output profile:"
+            $null = $profilePrompt.AddChoice('standard')
+            $null = $profilePrompt.AddChoice('minimal')
+            $null = $profilePrompt.AddChoice('debug')
+            $transparencyProfile = [Spectre.Console.AnsiConsole]::Prompt[string]($profilePrompt)
         } catch {
             $useSpectre = $false
             Write-Verbose "Spectre prompts failed, using plain prompts. $($_.Exception.Message)"
@@ -331,6 +338,13 @@ function Initialize-AlloyedRuntimeConfig {
 
         $enableBackoff = ((Read-Host "Enable exponential backoff? [y/n] (y)") -notmatch '^(?i)n')
         $enablePreview = ((Read-Host "Enable runtime preview logs? [y/n] (n)") -match '^(?i)y')
+
+        $profileInput = Read-Host "Transparency profile [standard/minimal/debug] (standard)"
+        switch -Regex ($profileInput) {
+            '^(?i)minimal$' { $transparencyProfile = 'minimal'; break }
+            '^(?i)debug$' { $transparencyProfile = 'debug'; break }
+            default { $transparencyProfile = 'standard'; break }
+        }
     }
 
     $runtimeConfig = @{
@@ -346,7 +360,7 @@ function Initialize-AlloyedRuntimeConfig {
                 EnableObservability = $true
                 EnableCorrelation = $true
                 EnableTransparency = $enableTransparency
-                TransparencyProfile = 'standard'
+                TransparencyProfile = $transparencyProfile
             }
             Mocking = @{
                 Enabled = $false
@@ -378,6 +392,7 @@ function Initialize-AlloyedRuntimeConfig {
             $null = $table.AddRow('ConfigPath', $configPath)
             $null = $table.AddRow('OutputMode (process)', $outputMode)
             $null = $table.AddRow('EnableTransparency', [string]$enableTransparency)
+            $null = $table.AddRow('TransparencyProfile', [string]$transparencyProfile)
             $null = $table.AddRow('SessionEnabled', [string]$enableSession)
             $null = $table.AddRow('RuntimeMaxRetries (process)', [string]$maxRetries)
             $null = $table.AddRow('RuntimeExponentialBackoff (process)', [string]$enableBackoff)
@@ -392,6 +407,7 @@ function Initialize-AlloyedRuntimeConfig {
         Write-Host "ConfigPath                : $configPath"
         Write-Host "OutputMode                : $outputMode"
         Write-Host "EnableTransparency        : $enableTransparency"
+        Write-Host "TransparencyProfile       : $transparencyProfile"
         Write-Host "SessionEnabled            : $enableSession"
         Write-Host "RuntimeMaxRetries         : $maxRetries"
         Write-Host "RuntimeExponentialBackoff : $enableBackoff"
@@ -402,6 +418,7 @@ function Initialize-AlloyedRuntimeConfig {
         ConfigPath = $configPath
         OutputMode = $outputMode
         EnableTransparency = $enableTransparency
+        TransparencyProfile = $transparencyProfile
         SessionEnabled = $enableSession
         RuntimeMaxRetries = $maxRetries
         RuntimeExponentialBackoff = $enableBackoff
