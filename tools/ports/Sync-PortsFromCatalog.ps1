@@ -51,7 +51,7 @@ foreach ($entry in ($entries | Sort-Object command)) {
     }
 }
 
-$modulePath = Join-Path $repoRoot "src/powershell/Alloyed.DevOps.Multitool.psm1"
+$modulePath = Join-Path $repoRoot "src/powershell/Public/Ports.Wrappers.ps1"
 
 Set-SectionContent `
     -Path $modulePath `

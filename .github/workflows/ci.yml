@@ -70,8 +70,7 @@ jobs:
         run: |
           pwsh -NoProfile -File tools/ports/Sync-PortsFromCatalog.ps1
           $changed = git status --porcelain -- `
-            src/powershell/Alloyed.DevOps.Multitool.psm1 `
-            src/powershell/Alloyed.DevOps.Multitool.psd1
+            src/powershell/Public/Ports.Wrappers.ps1
           if (-not [string]::IsNullOrWhiteSpace(($changed | Out-String))) {
             Write-Error "Generated ports files are out-of-date. Run tools/ports/Sync-PortsFromCatalog.ps1 and commit changes."
             $changed
