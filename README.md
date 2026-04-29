@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/ci.yml/badge.svg)](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/ci.yml)
 [![Integration+Publish](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/integration-publish.yml/badge.svg)](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/integration-publish.yml)
-[![Super-Linter](https://img.shields.io/github/actions/workflow/status/Ligare-Method/alloyed-devops-multitool/ci.yml?branch=main&label=Super-Linter)](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/ci.yml)
+[![Super-Linter](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/super-linter.yml/badge.svg?branch=main)](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/super-linter.yml)
 
 `alloyed-devops-multitool` is a PowerShell modernization toolkit:
 

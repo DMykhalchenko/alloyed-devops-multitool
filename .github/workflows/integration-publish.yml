@@ -83,11 +83,47 @@ jobs:
 
       - name: Build
         shell: pwsh
-        run: dotnet build Alloyed.DevOps.Multitool.slnx -c Release --no-restore
+        run: |
+          New-Item -ItemType Directory -Path artifacts/test-results -Force | Out-Null
+          dotnet build Alloyed.DevOps.Multitool.slnx -c Release --no-restore
 
       - name: Integration tests
         shell: pwsh
-        run: dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration/Alloyed.DevOps.Multitool.Tests.Integration.csproj -c Release --no-build -m:1
+        run: |
+          dotnet test tests/dotnet/Alloyed.DevOps.Multitool.Tests.Integration/Alloyed.DevOps.Multitool.Tests.Integration.csproj -c Release --no-build -m:1 `
+            --logger "trx;LogFileName=integration.trx" `
+            --results-directory artifacts/test-results
+
+      - name: CI metrics summary
+        if: always()
+        shell: pwsh
+        run: |
+          $trxPath = "artifacts/test-results/integration.trx"
+          $total = 0; $passed = 0; $failed = 0; $duration = "n/a"
+          if (Test-Path -LiteralPath $trxPath) {
+            [xml]$trx = Get-Content -LiteralPath $trxPath
+            $counters = $trx.TestRun.ResultSummary.Counters
+            $times = $trx.TestRun.Times
+            $total = [int]$counters.total
+            $passed = [int]$counters.passed
+            $failed = [int]$counters.failed
+            if ($times.start -and $times.finish) {
+              try {
+                $span = ([datetime]$times.finish) - ([datetime]$times.start)
+                $duration = [string]::Format("{0:hh\\:mm\\:ss}", $span)
+              } catch { }
+            }
+          }
+          @"
+          ## Integration Test Results
+
+          | Metric | Value |
+          |---|---:|
+          | Total | $total |
+          | Passed | $passed |
+          | Failed | $failed |
+          | Duration | $duration |
+          "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
 
   publish-preview:
     name: gha/publish-preview
