@@ -78,11 +78,13 @@ Primary runtime commands:
 - `Invoke-AlloyedScript`
 - `Enable-AlloyedTransparencyMode`
 - `Disable-AlloyedTransparencyMode`
+- `Set-AlloyedTransparencyProfile`
 - `Get-AlloyedTransparencyModeStatus`
 
 Configuration commands:
 
 - `Initialize-AlloyedRuntimeConfig`
+- `Apply-AlloyedRuntimeConfig`
 - `Test-AlloyedRuntimeConfig`
 
 Transform commands:
@@ -103,6 +105,17 @@ Tune runtime behavior with environment variables:
 - `ALLOYED_RUNTIME_TIMEOUT_SEC` (default `0`, disabled)
 - `ALLOYED_CONSOLE_OUTPUT_MODE` (`Plain|Rich`, default `Plain`)
 - `ALLOYED_TRANSPARENCY_VERBOSE` (`true|false`, default `false`)
+- `ALLOYED_TRANSPARENCY_PROFILE` (`minimal|standard|debug`, default `standard`)
+
+Recommended presets:
+
+```powershell
+# daily readable mode
+Enable-AlloyedTransparencyMode -Profile standard -Quiet
+
+# deep troubleshooting mode
+Enable-AlloyedTransparencyMode -Profile debug
+```
 
 Timeout behavior:
 

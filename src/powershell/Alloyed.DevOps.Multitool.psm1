@@ -202,6 +202,34 @@ function Write-AlloyedRuntimeConfigFile {
     Set-Content -LiteralPath $Path -Value $json
 }
 
+function Resolve-AlloyedTransparencyProfileFromConfig {
+    param(
+        [Parameter(Mandatory)] [string]$BasePath
+    )
+
+    $configPath = Get-AlloyedRuntimeConfigFilePath -BasePath $BasePath
+    $config = Read-AlloyedRuntimeConfigFile -Path $configPath
+
+    $profile = $null
+    if ($config.ContainsKey('Alloyed') -and
+        $config['Alloyed'] -is [hashtable] -and
+        $config['Alloyed'].ContainsKey('Decoration') -and
+        $config['Alloyed']['Decoration'] -is [hashtable] -and
+        $config['Alloyed']['Decoration'].ContainsKey('TransparencyProfile')) {
+        $profile = [string]$config['Alloyed']['Decoration']['TransparencyProfile']
+    }
+
+    if ([string]::IsNullOrWhiteSpace($profile)) {
+        return 'standard'
+    }
+
+    switch -Regex ($profile.Trim().ToLowerInvariant()) {
+        '^minimal$' { return 'minimal' }
+        '^debug$' { return 'debug' }
+        default { return 'standard' }
+    }
+}
+
 function Initialize-AlloyedWrappersFromCatalog {
     [CmdletBinding()]
     param()
@@ -318,6 +346,7 @@ function Initialize-AlloyedRuntimeConfig {
                 EnableObservability = $true
                 EnableCorrelation = $true
                 EnableTransparency = $enableTransparency
+                TransparencyProfile = 'standard'
             }
             Mocking = @{
                 Enabled = $false
@@ -411,10 +440,12 @@ function Apply-AlloyedRuntimeConfig {
     )
 
     $effective = Get-AlloyedRuntimeConfiguration -BasePath $BasePath
+    $profile = Resolve-AlloyedTransparencyProfileFromConfig -BasePath $BasePath
 
     if ($effective.Decoration.EnableTransparency) {
         $enableParams = @{
             SkipSessionMode = (-not [bool]$effective.Session.Enabled)
+            Profile = $profile
         }
         if ($QuietTransparency.IsPresent) {
             $enableParams['Quiet'] = $true
@@ -427,6 +458,16 @@ function Apply-AlloyedRuntimeConfig {
         }
     }
 
+    return Get-AlloyedTransparencyModeStatus
+}
+
+function Set-AlloyedTransparencyProfile {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)] [ValidateSet('minimal','standard','debug')] [string]$Profile
+    )
+
+    [System.Environment]::SetEnvironmentVariable('ALLOYED_TRANSPARENCY_PROFILE', $Profile, 'Process')
     return Get-AlloyedTransparencyModeStatus
 }
 

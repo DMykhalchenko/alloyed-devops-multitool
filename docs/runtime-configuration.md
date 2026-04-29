@@ -45,6 +45,7 @@ $env:ALLOYED_CONSOLE_OUTPUT_MODE = "Rich"   # single underscore — PS-layer onl
 | `Alloyed:Decoration:EnableObservability` | bool | `true` | Decorator runtime flag. |
 | `Alloyed:Decoration:EnableCorrelation` | bool | `true` | Decorator runtime flag. |
 | `Alloyed:Decoration:EnableTransparency` | bool | `false` | Watch/transparency mode flag (next wave). |
+| `Alloyed:Decoration:TransparencyProfile` | `minimal\|standard\|debug` | `standard` | Controls readability/detail of transparency output. |
 | `Alloyed:Mocking:Enabled` | bool | `false` | Enables mock mode controls. |
 | `Alloyed:Mocking:Mode` | `InMemory\|Moq\|Custom` | `InMemory` | Throws actionable error on invalid value. |
 | `Alloyed:Catalog:SourcePath` | string or empty | empty | Optional path to external `ports.catalog.json`. Empty uses embedded catalog from the assembly. |
@@ -64,6 +65,7 @@ Alloyed:
     EnableObservability: true
     EnableCorrelation: true
     EnableTransparency: false
+    TransparencyProfile: standard
   Mocking:
     Enabled: false
     Mode: InMemory
@@ -131,6 +133,12 @@ To apply saved config to the current session explicitly:
 Apply-AlloyedRuntimeConfig
 ```
 
+Apply and keep output concise:
+
+```powershell
+Apply-AlloyedRuntimeConfig -QuietTransparency
+```
+
 Runtime timeout notes:
 
 - `ALLOYED_RUNTIME_TIMEOUT_SEC` applies hard timeout to non-pipeline wrapper calls.
@@ -148,6 +156,7 @@ Or toggle at runtime for current session:
 
 ```powershell
 Enable-AlloyedTransparencyMode [-OutputMode Plain|Rich] [-Profile minimal|standard|debug] [-Quiet]
+Set-AlloyedTransparencyProfile -Profile minimal|standard|debug
 Get-AlloyedTransparencyModeStatus
 Disable-AlloyedTransparencyMode
 ```
