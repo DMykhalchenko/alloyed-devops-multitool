@@ -202,34 +202,6 @@ function Write-AlloyedRuntimeConfigFile {
     Set-Content -LiteralPath $Path -Value $json
 }
 
-function Resolve-AlloyedTransparencyProfileFromConfig {
-    param(
-        [Parameter(Mandatory)] [string]$BasePath
-    )
-
-    $configPath = Get-AlloyedRuntimeConfigFilePath -BasePath $BasePath
-    $config = Read-AlloyedRuntimeConfigFile -Path $configPath
-
-    $profile = $null
-    if ($config.ContainsKey('Alloyed') -and
-        $config['Alloyed'] -is [hashtable] -and
-        $config['Alloyed'].ContainsKey('Decoration') -and
-        $config['Alloyed']['Decoration'] -is [hashtable] -and
-        $config['Alloyed']['Decoration'].ContainsKey('TransparencyProfile')) {
-        $profile = [string]$config['Alloyed']['Decoration']['TransparencyProfile']
-    }
-
-    if ([string]::IsNullOrWhiteSpace($profile)) {
-        return 'standard'
-    }
-
-    switch -Regex ($profile.Trim().ToLowerInvariant()) {
-        '^minimal$' { return 'minimal' }
-        '^debug$' { return 'debug' }
-        default { return 'standard' }
-    }
-}
-
 function Initialize-AlloyedWrappersFromCatalog {
     [CmdletBinding()]
     param()
@@ -457,7 +429,11 @@ function Apply-AlloyedRuntimeConfig {
     )
 
     $effective = Get-AlloyedRuntimeConfiguration -BasePath $BasePath
-    $profile = Resolve-AlloyedTransparencyProfileFromConfig -BasePath $BasePath
+    $profile = [string]$effective.Decoration.TransparencyProfile
+    if ([string]::IsNullOrWhiteSpace($profile)) {
+        $profile = 'standard'
+    }
+    $profile = $profile.Trim().ToLowerInvariant()
 
     if ($effective.Decoration.EnableTransparency) {
         $enableParams = @{
@@ -960,6 +936,7 @@ function Get-AlloyedRuntimeConfiguration {
             EnableObservability = $configuration.Decoration.EnableObservability
             EnableCorrelation = $configuration.Decoration.EnableCorrelation
             EnableTransparency = $configuration.Decoration.EnableTransparency
+            TransparencyProfile = $configuration.Decoration.TransparencyProfile.ToString().ToLowerInvariant()
         }
         Mocking = [pscustomobject]@{
             Enabled = $configuration.Mocking.Enabled

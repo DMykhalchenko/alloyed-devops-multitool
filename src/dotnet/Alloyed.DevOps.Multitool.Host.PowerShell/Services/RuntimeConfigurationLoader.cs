@@ -35,6 +35,7 @@ public sealed class RuntimeConfigurationLoader
         values["Alloyed:Decoration:EnableObservability"] = "true";
         values["Alloyed:Decoration:EnableCorrelation"] = "true";
         values["Alloyed:Decoration:EnableTransparency"] = "false";
+        values["Alloyed:Decoration:TransparencyProfile"] = "Standard";
         values["Alloyed:Mocking:Enabled"] = "false";
         values["Alloyed:Mocking:Mode"] = "InMemory";
         values["Alloyed:Catalog:SourcePath"] = string.Empty;
@@ -247,7 +248,8 @@ public sealed class RuntimeConfigurationLoader
             EnableErrorHandling: ParseBool(values, defaultValue: true, "Alloyed:Decoration:EnableErrorHandling", "TAF:Decoration:EnableErrorHandling"),
             EnableObservability: ParseBool(values, defaultValue: true, "Alloyed:Decoration:EnableObservability", "TAF:Decoration:EnableObservability"),
             EnableCorrelation: ParseBool(values, defaultValue: true, "Alloyed:Decoration:EnableCorrelation", "TAF:Decoration:EnableCorrelation"),
-            EnableTransparency: ParseBool(values, defaultValue: false, "Alloyed:Decoration:EnableTransparency", "TAF:Decoration:EnableTransparency"));
+            EnableTransparency: ParseBool(values, defaultValue: false, "Alloyed:Decoration:EnableTransparency", "TAF:Decoration:EnableTransparency"),
+            TransparencyProfile: ParseEnum<TransparencyProfile>(values, defaultValue: TransparencyProfile.Standard, "Alloyed:Decoration:TransparencyProfile", "TAF:Decoration:TransparencyProfile"));
 
         var mocking = new MockingOptions(
             Enabled: ParseBool(values, defaultValue: false, "Alloyed:Mocking:Enabled", "TAF:Mocking:Enabled"),

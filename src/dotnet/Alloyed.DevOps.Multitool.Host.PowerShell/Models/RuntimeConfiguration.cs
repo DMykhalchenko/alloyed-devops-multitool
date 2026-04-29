@@ -14,7 +14,8 @@ public sealed record RuntimeConfiguration(
             EnableErrorHandling: true,
             EnableObservability: true,
             EnableCorrelation: true,
-            EnableTransparency: false),
+            EnableTransparency: false,
+            TransparencyProfile: TransparencyProfile.Standard),
         Mocking: new MockingOptions(
             Enabled: false,
             Mode: MockingMode.InMemory),
@@ -29,7 +30,8 @@ public sealed record DecorationOptions(
     bool EnableErrorHandling,
     bool EnableObservability,
     bool EnableCorrelation,
-    bool EnableTransparency);
+    bool EnableTransparency,
+    TransparencyProfile TransparencyProfile);
 
 public sealed record MockingOptions(bool Enabled, MockingMode Mode);
 
@@ -40,4 +42,11 @@ public enum MockingMode
     InMemory = 0,
     Moq = 1,
     Custom = 2,
+}
+
+public enum TransparencyProfile
+{
+    Minimal = 0,
+    Standard = 1,
+    Debug = 2,
 }

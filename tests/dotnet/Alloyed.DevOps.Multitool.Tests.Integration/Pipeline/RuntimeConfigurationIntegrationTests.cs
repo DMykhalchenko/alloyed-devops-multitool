@@ -18,7 +18,8 @@ public class RuntimeConfigurationIntegrationTests
               "Alloyed": {
                 "Runtime": { "FailOnSeverity": "Error" },
                 "Session": { "Enabled": false },
-                "Mocking": { "Mode": "Moq" }
+                "Mocking": { "Mode": "Moq" },
+                "Decoration": { "TransparencyProfile": "Minimal" }
               }
             }
             """);
@@ -29,6 +30,8 @@ public class RuntimeConfigurationIntegrationTests
                 FailOnSeverity: Warning
               Session:
                 Enabled: true
+              Decoration:
+                TransparencyProfile: Debug
               Mocking:
                 Mode: Custom
             """);
@@ -39,6 +42,7 @@ public class RuntimeConfigurationIntegrationTests
             ["ALLOYED__RUNTIME__DEFAULTOUTPUTPATH"] = "generated-modules",
             ["ALLOYED__MOCKING__ENABLED"] = "true",
             ["ALLOYED__CATALOG__SOURCEPATH"] = "tools/ports/ports.catalog.json",
+            ["ALLOYED__DECORATION__TRANSPARENCYPROFILE"] = "Standard",
         };
 
         try
@@ -49,6 +53,7 @@ public class RuntimeConfigurationIntegrationTests
             configuration.Runtime.DefaultOutputPath.Should().Be("generated-modules");
             configuration.Session.Enabled.Should().BeTrue();
             configuration.Decoration.EnableErrorHandling.Should().BeTrue(); // default
+            configuration.Decoration.TransparencyProfile.Should().Be(TransparencyProfile.Standard);
             configuration.Mocking.Mode.Should().Be(MockingMode.Custom);
             configuration.Mocking.Enabled.Should().BeTrue();
             configuration.Catalog.SourcePath.Should().Be("tools/ports/ports.catalog.json");
