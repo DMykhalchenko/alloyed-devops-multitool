@@ -20,6 +20,7 @@
         'Enable-AlloyedTransparencyMode',
         'Disable-AlloyedTransparencyMode',
         'Get-AlloyedTransparencyModeStatus',
+        'Invoke-AlloyedScript',
         'Initialize-AlloyedRuntimeConfig',
         'Test-AlloyedRuntimeConfig'
     )

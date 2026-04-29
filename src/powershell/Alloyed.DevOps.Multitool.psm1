@@ -939,6 +939,41 @@ function Disable-AlloyedTransparencyMode {
     Get-AlloyedTransparencyModeStatus
 }
 
+function Invoke-AlloyedScript {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)] [string]$ScriptPath,
+        [Parameter()] [object[]]$ArgumentList = @(),
+        [Parameter()] [switch]$SkipSessionMode,
+        [Parameter()] [ValidateSet('Plain','Rich')] [string]$OutputMode
+    )
+
+    if (-not (Test-Path -LiteralPath $ScriptPath)) {
+        throw "Script not found: '$ScriptPath'"
+    }
+
+    $resolvedPath = (Resolve-Path -LiteralPath $ScriptPath).Path
+    $shouldDisableAfterRun = $false
+
+    if (-not (Resolve-AlloyedTransparencyEnabled)) {
+        $null = Enable-AlloyedTransparencyMode -SkipSessionMode:$SkipSessionMode -OutputMode $OutputMode
+        $shouldDisableAfterRun = $true
+    } elseif (-not $SkipSessionMode.IsPresent -and -not $script:SessionModeEnabled) {
+        $null = Enable-AlloyedSessionMode -Force
+    }
+
+    try {
+        & $resolvedPath @ArgumentList
+    } finally {
+        if ($shouldDisableAfterRun) {
+            $null = Disable-AlloyedTransparencyMode
+            if (-not $SkipSessionMode.IsPresent) {
+                $null = Disable-AlloyedSessionMode
+            }
+        }
+    }
+}
+
 function Get-AlloyedTransparencyModeStatus {
     [CmdletBinding()]
     param()
