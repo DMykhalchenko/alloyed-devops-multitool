@@ -337,14 +337,7 @@ function Initialize-AlloyedRuntimeConfig {
         [System.Environment]::SetEnvironmentVariable('ALLOYED_RUNTIME_PREVIEW', [string]$enablePreview, 'Process')
 
         if ($ApplyToCurrentSession) {
-            if ($enableTransparency) {
-                $null = Enable-AlloyedTransparencyMode -SkipSessionMode:(-not $enableSession) -OutputMode $outputMode
-            } else {
-                $null = Disable-AlloyedTransparencyMode
-                if ($script:SessionModeEnabled) {
-                    $null = Disable-AlloyedSessionMode
-                }
-            }
+            $null = Apply-AlloyedRuntimeConfig -BasePath $BasePath
         }
     }
 
@@ -408,6 +401,33 @@ function Test-AlloyedRuntimeConfig {
         RuntimeExponentialBackoff = $policy.ExponentialBackoff
         RuntimePreview = $policy.Preview
     }
+}
+
+function Apply-AlloyedRuntimeConfig {
+    [CmdletBinding()]
+    param(
+        [Parameter()] [string]$BasePath = (Get-AlloyedProjectRoot),
+        [Parameter()] [switch]$QuietTransparency
+    )
+
+    $effective = Get-AlloyedRuntimeConfiguration -BasePath $BasePath
+
+    if ($effective.Decoration.EnableTransparency) {
+        $enableParams = @{
+            SkipSessionMode = (-not [bool]$effective.Session.Enabled)
+        }
+        if ($QuietTransparency.IsPresent) {
+            $enableParams['Quiet'] = $true
+        }
+        $null = Enable-AlloyedTransparencyMode @enableParams
+    } else {
+        $null = Disable-AlloyedTransparencyMode
+        if ($script:SessionModeEnabled) {
+            $null = Disable-AlloyedSessionMode
+        }
+    }
+
+    return Get-AlloyedTransparencyModeStatus
 }
 
 function Get-AlloyedConsoleReporter {

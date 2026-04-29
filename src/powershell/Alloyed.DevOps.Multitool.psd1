@@ -22,6 +22,7 @@
         'Get-AlloyedTransparencyModeStatus',
         'Invoke-AlloyedScript',
         'Initialize-AlloyedRuntimeConfig',
+        'Apply-AlloyedRuntimeConfig',
         'Test-AlloyedRuntimeConfig'
     )
     CmdletsToExport = @()

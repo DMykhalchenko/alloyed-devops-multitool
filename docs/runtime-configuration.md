@@ -110,7 +110,7 @@ Initialize-AlloyedRuntimeConfig
 
 Behavior:
 
-- Uses Spectre.Console selection/confirmation prompts.
+- Uses Spectre.Console selection/confirmation prompts, with plain `Read-Host` fallback when Spectre APIs are unavailable.
 - Writes `config/appsettings.json`.
 - Sets process-level runtime environment values for current session:
   - `ALLOYED_CONSOLE_OUTPUT_MODE`
@@ -123,6 +123,12 @@ To inspect effective settings:
 
 ```powershell
 Test-AlloyedRuntimeConfig
+```
+
+To apply saved config to the current session explicitly:
+
+```powershell
+Apply-AlloyedRuntimeConfig
 ```
 
 Runtime timeout notes:
@@ -141,10 +147,16 @@ $env:ALLOYED__DECORATION__ENABLETRANSPARENCY = "true"
 Or toggle at runtime for current session:
 
 ```powershell
-Enable-AlloyedTransparencyMode [-OutputMode Plain|Rich]
+Enable-AlloyedTransparencyMode [-OutputMode Plain|Rich] [-Profile minimal|standard|debug] [-Quiet]
 Get-AlloyedTransparencyModeStatus
 Disable-AlloyedTransparencyMode
 ```
 
 When enabled, wrappers emit sanitized watch events through `TransparencyDecorator`.
 Sensitive tags (for example keys containing `password`, `secret`, `token`, `apikey`, `credential`) are redacted.
+
+Profiles:
+
+- `minimal`: compact phase + operation lines.
+- `standard`: readable default with key signal tags.
+- `debug`: full tag preview for deep diagnostics.

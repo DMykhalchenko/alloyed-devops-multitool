@@ -7,6 +7,7 @@ param(
     [Parameter(Mandatory)] [string]$Prerelease,
     [Parameter()] [string]$ApiKey = $env:GITHUB_TOKEN,
     [Parameter()] [switch]$SkipBuild,
+    [Parameter()] [switch]$SkipIfVersionExists,
     [Parameter()] [switch]$WhatIf
 )
 
@@ -82,7 +83,16 @@ $publishParams = @{
 if ($WhatIf.IsPresent) {
     Publish-PSResource @publishParams -WhatIf
 } else {
-    Publish-PSResource @publishParams
+    try {
+        Publish-PSResource @publishParams
+    } catch {
+        $message = $_.Exception.Message
+        if ($SkipIfVersionExists.IsPresent -and $message -match '409\s*\(Conflict\)') {
+            Write-Warning "Module version already exists ($fullVersion). Skipping publish because -SkipIfVersionExists is enabled."
+        } else {
+            throw
+        }
+    }
 }
 
 Write-Host "Done. Published $ModuleName $fullVersion to $feedUri"

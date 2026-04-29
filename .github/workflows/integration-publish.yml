@@ -111,4 +111,5 @@ jobs:
             -Owner "${{ github.repository_owner }}" `
             -Repository "${{ github.event.repository.name }}" `
             -ModuleVersion "${{ steps.version.outputs.module_version }}" `
-            -Prerelease "${{ steps.version.outputs.prerelease }}"
+            -Prerelease "${{ steps.version.outputs.prerelease }}" `
+            -SkipIfVersionExists
