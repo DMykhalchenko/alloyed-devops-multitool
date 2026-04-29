@@ -98,6 +98,11 @@ Runtime note:
 - `ALLOYED_RUNTIME_RETRY_DELAY_SEC` (default `2`)
 - `ALLOYED_RUNTIME_EXPONENTIAL_BACKOFF` (`true|false`, default `false`)
 - `ALLOYED_RUNTIME_PREVIEW` (`true|false`, default `false`)
+- `ALLOYED_RUNTIME_TIMEOUT_SEC` (default `0`, disabled)
+
+Timeout behavior:
+- Hard timeout is applied for non-pipeline wrapper calls.
+- For pipeline-input calls, runtime uses a safe fallback (no hard cancellation).
 
 ## Runtime Config API
 

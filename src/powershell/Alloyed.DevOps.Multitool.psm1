@@ -434,10 +434,35 @@ function Invoke-AlloyedCommandRuntime {
                 Write-Host ("[alloyed-runtime] phase=attempt op={0} attempt={1}" -f $Operation, $attempt)
             }
 
-            $output = if ($InputObjects.Count -gt 0) {
-                $InputObjects | & $Action @Arguments
+            $output = $null
+            if ($policy.TimeoutSec -gt 0 -and $InputObjects.Count -eq 0) {
+                $job = Start-Job -ScriptBlock {
+                    param([scriptblock]$InnerAction, [object[]]$InnerArgs)
+                    & $InnerAction @InnerArgs
+                } -ArgumentList $Action, $Arguments
+
+                $completed = Wait-Job -Job $job -Timeout $policy.TimeoutSec
+                if (-not $completed) {
+                    Stop-Job -Job $job -ErrorAction SilentlyContinue
+                    Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
+                    throw "Operation '$Operation' exceeded timeout of $($policy.TimeoutSec) seconds."
+                }
+
+                try {
+                    $output = Receive-Job -Job $job -ErrorAction Stop
+                } finally {
+                    Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
+                }
             } else {
-                & $Action @Arguments
+                if ($policy.TimeoutSec -gt 0 -and $InputObjects.Count -gt 0 -and $policy.Preview) {
+                    Write-Host ("[alloyed-runtime] phase=timeout-fallback op={0} reason=input-pipeline" -f $Operation)
+                }
+
+                $output = if ($InputObjects.Count -gt 0) {
+                    $InputObjects | & $Action @Arguments
+                } else {
+                    & $Action @Arguments
+                }
             }
 
             $sw.Stop()

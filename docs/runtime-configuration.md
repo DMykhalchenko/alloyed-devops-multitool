@@ -117,12 +117,18 @@ Behavior:
   - `ALLOYED_RUNTIME_MAX_RETRIES`
   - `ALLOYED_RUNTIME_EXPONENTIAL_BACKOFF`
   - `ALLOYED_RUNTIME_PREVIEW`
+  - `ALLOYED_RUNTIME_TIMEOUT_SEC`
 
 To inspect effective settings:
 
 ```powershell
 Test-AlloyedRuntimeConfig
 ```
+
+Runtime timeout notes:
+
+- `ALLOYED_RUNTIME_TIMEOUT_SEC` applies hard timeout to non-pipeline wrapper calls.
+- For pipeline-input calls, execution uses safe fallback without hard cancellation.
 
 ## Transparency watch mode
 
