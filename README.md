@@ -156,6 +156,7 @@ pwsh -NoProfile -File ./dev.ps1 -Stage smoke
 
 ## Documentation
 
+- Installation from GitHub Packages: `docs/install-module.md`
 - Runtime configuration: `docs/runtime-configuration.md`
 - Legacy transparency quickstart: `docs/legacy-transparency-quickstart.md`
 - Module access model: `docs/module-access-model.md`
