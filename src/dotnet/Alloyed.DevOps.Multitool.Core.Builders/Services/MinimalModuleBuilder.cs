@@ -4,8 +4,24 @@ using System.Text;
 using Alloyed.DevOps.Multitool.Core.Builders.Contracts;
 using Alloyed.DevOps.Multitool.Core.Builders.Models;
 
+/// <summary>
+/// An <see cref="IModuleBuilder"/> that writes a minimal but standards-compliant PowerShell module:
+/// a <c>.psm1</c> script module, a <c>.psd1</c> manifest, and a <c>README.md</c> file.
+/// All errors during the write phase are caught and returned as a failed <see cref="ModuleBuildResult"/>
+/// rather than propagated as exceptions.
+/// </summary>
 public sealed class MinimalModuleBuilder : IModuleBuilder
 {
+    /// <summary>
+    /// Creates the module directory under <see cref="ModuleBuildRequest.OutputPath"/> and writes
+    /// the <c>.psm1</c>, <c>.psd1</c>, and <c>README.md</c> files.
+    /// </summary>
+    /// <param name="request">All inputs required to build the module.</param>
+    /// <returns>
+    /// A successful <see cref="ModuleBuildResult"/> listing the three created files, or a failed
+    /// result with <see cref="ModuleBuildResult.ErrorMessage"/> set when any I/O or validation
+    /// error occurs.
+    /// </returns>
     public ModuleBuildResult Build(ModuleBuildRequest request)
     {
         try
@@ -39,6 +55,11 @@ public sealed class MinimalModuleBuilder : IModuleBuilder
         }
     }
 
+    /// <summary>
+    /// Validates that all required fields of <paramref name="request"/> are non-null and non-whitespace.
+    /// </summary>
+    /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="request"/> or <see cref="ModuleBuildRequest.RequiredModules"/> is <see langword="null"/>.</exception>
+    /// <exception cref="System.ArgumentException">Thrown when <see cref="ModuleBuildRequest.ModuleName"/>, <see cref="ModuleBuildRequest.OutputPath"/>, <see cref="ModuleBuildRequest.Author"/>, or <see cref="ModuleBuildRequest.Description"/> is null or whitespace.</exception>
     private static void Validate(ModuleBuildRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -49,6 +70,10 @@ public sealed class MinimalModuleBuilder : IModuleBuilder
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Description);
     }
 
+    /// <summary>
+    /// Generates the <c>.psd1</c> module manifest text for <paramref name="request"/>.
+    /// A fresh GUID is generated for each call.
+    /// </summary>
     private static string BuildManifest(ModuleBuildRequest request)
     {
         var requiredModulesLiteral = request.RequiredModules.Count == 0
@@ -77,6 +102,9 @@ public sealed class MinimalModuleBuilder : IModuleBuilder
 }}";
     }
 
+    /// <summary>
+    /// Generates the <c>README.md</c> content for <paramref name="request"/>.
+    /// </summary>
     private static string BuildReadme(ModuleBuildRequest request)
     {
         return $@"# {request.ModuleName}
@@ -91,6 +119,10 @@ public sealed class MinimalModuleBuilder : IModuleBuilder
 ";
     }
 
+    /// <summary>
+    /// Escapes single-quote characters in <paramref name="value"/> by doubling them,
+    /// making the result safe for embedding inside a PowerShell single-quoted string.
+    /// </summary>
     private static string EscapeSingleQuotes(string value)
     {
         return value.Replace("'", "''", StringComparison.Ordinal);

@@ -4,6 +4,16 @@ using System.Text.RegularExpressions;
 using Alloyed.DevOps.Multitool.Core.Ast.Contracts;
 using Alloyed.DevOps.Multitool.Core.Ast.Models;
 
+/// <summary>
+/// A lightweight, regex-based implementation of <see cref="IScriptAnalyzer"/> that operates without
+/// loading the PowerShell runtime. It uses a character-level state machine to mask string literals,
+/// here-strings, and line comments before applying a command-pattern regex, so that command-like
+/// tokens inside quoted text are not reported as command usages.
+/// </summary>
+/// <remarks>
+/// This analyzer is intentionally heuristic: it trades perfect accuracy for zero runtime dependencies.
+/// For authoritative analysis, use <see cref="PowerShellScriptAnalyzer"/> instead.
+/// </remarks>
 public sealed partial class HeuristicScriptAnalyzer : IScriptAnalyzer
 {
     private static readonly HashSet<string> ReservedTokens = new(StringComparer.OrdinalIgnoreCase)
@@ -11,6 +21,14 @@ public sealed partial class HeuristicScriptAnalyzer : IScriptAnalyzer
         "if", "elseif", "else", "switch", "foreach", "for", "while", "do", "try", "catch", "finally", "return", "function"
     };
 
+    /// <summary>
+    /// Reads the script at <paramref name="path"/> from disk and delegates to
+    /// <see cref="AnalyzeContent"/>.
+    /// </summary>
+    /// <param name="path">Absolute or relative path to the PowerShell script file.</param>
+    /// <returns>Analysis result containing all detected command usages and any parse diagnostics.</returns>
+    /// <exception cref="System.ArgumentException">Thrown when <paramref name="path"/> is null or whitespace.</exception>
+    /// <exception cref="System.IO.FileNotFoundException">Thrown when the file does not exist at <paramref name="path"/>.</exception>
     public ScriptAnalysisResult AnalyzeFile(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -24,6 +42,18 @@ public sealed partial class HeuristicScriptAnalyzer : IScriptAnalyzer
         return AnalyzeContent(path, content);
     }
 
+    /// <summary>
+    /// Analyzes the supplied script <paramref name="content"/> using the heuristic state-machine scanner.
+    /// </summary>
+    /// <param name="logicalPath">
+    /// A logical identifier stored in the returned <see cref="ScriptAnalysisResult.ScriptPath"/>;
+    /// does not need to be a real file path.
+    /// </param>
+    /// <param name="content">Raw PowerShell script text to analyze.</param>
+    /// <returns>Analysis result containing all detected command usages and any parse diagnostics.</returns>
+    /// <exception cref="System.ArgumentNullException">
+    /// Thrown when <paramref name="logicalPath"/> or <paramref name="content"/> is <see langword="null"/>.
+    /// </exception>
     public ScriptAnalysisResult AnalyzeContent(string logicalPath, string content)
     {
         ArgumentNullException.ThrowIfNull(logicalPath);
@@ -73,6 +103,12 @@ public sealed partial class HeuristicScriptAnalyzer : IScriptAnalyzer
         return new ScriptAnalysisResult(logicalPath, commands, diagnostics, content);
     }
 
+    /// <summary>
+    /// Replaces all non-code characters (string literals, here-strings, line comments) in
+    /// <paramref name="content"/> with spaces, preserving newlines so that line numbers remain
+    /// accurate. A <see cref="ParseDiagnostic"/> is appended to <paramref name="diagnostics"/>
+    /// when an unterminated string is detected at end-of-file.
+    /// </summary>
     private static string MaskNonCode(string content, ICollection<ParseDiagnostic> diagnostics)
     {
         var chars = content.ToCharArray();
@@ -218,6 +254,11 @@ public sealed partial class HeuristicScriptAnalyzer : IScriptAnalyzer
         return new string(chars);
     }
 
+    /// <summary>
+    /// Returns <see langword="true"/> when the <c>@'</c> or <c>@"</c> sequence starting at
+    /// <paramref name="atIndex"/> is followed only by optional whitespace before a newline,
+    /// which is the PowerShell rule for a valid here-string opening delimiter.
+    /// </summary>
     private static bool IsHereStringStart(IReadOnlyList<char> chars, int atIndex)
     {
         var i = atIndex + 2;
@@ -235,6 +276,12 @@ public sealed partial class HeuristicScriptAnalyzer : IScriptAnalyzer
         return true;
     }
 
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="chars"/>[<paramref name="index"/>] is
+    /// <paramref name="quote"/> followed by <c>@</c>, with only whitespace between the start of
+    /// the current line and <paramref name="index"/>, and only whitespace between <c>@</c> and the
+    /// next newline — the PowerShell rule for a valid here-string closing delimiter.
+    /// </summary>
     private static bool IsHereStringTerminator(IReadOnlyList<char> chars, int index, char quote)
     {
         if (index + 1 >= chars.Count || chars[index] != quote || chars[index + 1] != '@')
@@ -261,9 +308,15 @@ public sealed partial class HeuristicScriptAnalyzer : IScriptAnalyzer
         return true;
     }
 
+    /// <summary>
+    /// Source-generated regex that matches PowerShell command tokens of the form
+    /// <c>[Module\]Verb-Noun</c> and a small set of approved aliases (<c>gci</c>, <c>gi</c>, <c>tp</c>).
+    /// Named groups: <c>module</c> (optional qualifier) and <c>cmd</c> (command name).
+    /// </summary>
     [GeneratedRegex(@"(?<![\w-])(?:(?<module>[A-Za-z0-9_.]+)\\)?(?<cmd>[A-Za-z]+-[A-Za-z][A-Za-z0-9-]*|gci|gi|tp)(?![\w-])", RegexOptions.CultureInvariant)]
     private static partial Regex CommandPattern();
 
+    /// <summary>Internal state machine states used by <see cref="MaskNonCode"/>.</summary>
     private enum ScanState
     {
         Normal,

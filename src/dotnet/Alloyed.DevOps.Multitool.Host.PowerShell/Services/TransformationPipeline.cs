@@ -8,6 +8,21 @@ using Alloyed.DevOps.Multitool.Core.Catalog.Contracts;
 using Alloyed.DevOps.Multitool.Host.PowerShell.Contracts;
 using Alloyed.DevOps.Multitool.Host.PowerShell.Models;
 
+/// <summary>
+/// The main <see cref="ITransformationPipeline"/> implementation. Orchestrates the following
+/// steps for each <see cref="PipelineRequest"/>:
+/// <list type="number">
+///   <item>Input validation.</item>
+///   <item>Output directory conflict check (respects <see cref="PipelineRequest.Force"/>).</item>
+///   <item>Script analysis via <see cref="IScriptAnalyzer"/>.</item>
+///   <item>Fail-on-severity evaluation.</item>
+///   <item>Catalog resolution via <see cref="IWrapperCatalog"/>.</item>
+///   <item>Source text transformation via <see cref="ICommandTransformer"/>.</item>
+///   <item>Module output via <see cref="IModuleBuilder"/>.</item>
+/// </list>
+/// All exceptions are caught and returned as a failed <see cref="PipelineResult"/>; this method
+/// never propagates.
+/// </summary>
 public sealed class TransformationPipeline : ITransformationPipeline
 {
     private readonly IScriptAnalyzer _analyzer;
@@ -16,6 +31,17 @@ public sealed class TransformationPipeline : ITransformationPipeline
     private readonly IModuleBuilder _moduleBuilder;
     private readonly RuntimeConfiguration _configuration;
 
+    /// <summary>
+    /// Initializes all pipeline stages.
+    /// </summary>
+    /// <param name="analyzer">AST analyzer used to extract command usages from the script.</param>
+    /// <param name="catalog">Wrapper catalog used to resolve command substitutions.</param>
+    /// <param name="transformer">Text transformer that applies the resolved substitutions.</param>
+    /// <param name="moduleBuilder">Builder that writes the output module to disk.</param>
+    /// <param name="configuration">
+    /// Runtime configuration that supplies default options (e.g. fail-on-severity threshold).
+    /// When <see langword="null"/>, <see cref="RuntimeConfiguration.Default"/> is used.
+    /// </param>
     public TransformationPipeline(
         IScriptAnalyzer analyzer,
         IWrapperCatalog catalog,
@@ -30,6 +56,7 @@ public sealed class TransformationPipeline : ITransformationPipeline
         _configuration = configuration ?? RuntimeConfiguration.Default;
     }
 
+    /// <inheritdoc/>
     public PipelineResult Execute(PipelineRequest request)
     {
         try
@@ -157,6 +184,10 @@ public sealed class TransformationPipeline : ITransformationPipeline
         }
     }
 
+    /// <summary>
+    /// Validates that all required fields in <paramref name="request"/> are non-null and
+    /// non-whitespace.
+    /// </summary>
     private static void Validate(PipelineRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -165,11 +196,19 @@ public sealed class TransformationPipeline : ITransformationPipeline
         ArgumentException.ThrowIfNullOrWhiteSpace(request.OutputPath);
     }
 
+    /// <summary>
+    /// Counts entries in <paramref name="replacements"/> where key and value differ
+    /// (i.e. actual substitutions, not identity mappings for unmatched commands).
+    /// </summary>
     private static int CountReplacements(IReadOnlyDictionary<string, string> replacements)
     {
         return replacements.Count(static kv => !string.Equals(kv.Key, kv.Value, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Converts AST-layer <see cref="ParseDiagnostic"/> entries to pipeline-layer
+    /// <see cref="PipelineDiagnostic"/> entries, inferring a short diagnostic code from the message.
+    /// </summary>
     private static PipelineDiagnostic[] MapAstDiagnostics(IReadOnlyList<ParseDiagnostic> diagnostics)
     {
         if (diagnostics.Count == 0)
@@ -188,6 +227,10 @@ public sealed class TransformationPipeline : ITransformationPipeline
             .ToArray();
     }
 
+    /// <summary>
+    /// Infers a short diagnostic code from the AST error <paramref name="message"/> text.
+    /// Defaults to <c>AST-DIAGNOSTIC</c> for unrecognised patterns.
+    /// </summary>
     private static string InferAstCode(string message)
     {
         if (message.Contains("unterminated string", StringComparison.OrdinalIgnoreCase) ||
@@ -204,6 +247,10 @@ public sealed class TransformationPipeline : ITransformationPipeline
         return "AST-DIAGNOSTIC";
     }
 
+    /// <summary>
+    /// Maps a <see cref="ParseDiagnosticSeverity"/> value to the corresponding
+    /// <see cref="PipelineDiagnosticSeverity"/>. Unknown values map to Warning.
+    /// </summary>
     private static PipelineDiagnosticSeverity MapSeverity(ParseDiagnosticSeverity severity)
     {
         return severity switch
@@ -215,6 +262,10 @@ public sealed class TransformationPipeline : ITransformationPipeline
         };
     }
 
+    /// <summary>
+    /// Merges per-request options with configuration defaults to produce the effective context
+    /// used during this pipeline run.
+    /// </summary>
     private EffectivePipelineContext Resolve(PipelineRequest request) =>
         new(
             ScriptPath: request.ScriptPath,
@@ -223,6 +274,9 @@ public sealed class TransformationPipeline : ITransformationPipeline
             Force: request.Force,
             FailOnSeverity: request.FailOnSeverity ?? _configuration.Runtime.FailOnSeverity);
 
+    /// <summary>
+    /// Immutable struct that holds the resolved, effective parameters for a single pipeline run.
+    /// </summary>
     private readonly record struct EffectivePipelineContext(
         string ScriptPath,
         string ModuleName,

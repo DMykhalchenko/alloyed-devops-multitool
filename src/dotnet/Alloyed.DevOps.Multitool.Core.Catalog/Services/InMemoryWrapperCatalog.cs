@@ -4,6 +4,17 @@ using System.Text.Json;
 using Alloyed.DevOps.Multitool.Core.Catalog.Contracts;
 using Alloyed.DevOps.Multitool.Core.Catalog.Models;
 
+/// <summary>
+/// An <see cref="IWrapperCatalog"/> that loads the command-to-wrapper mapping once at construction
+/// time and holds it entirely in memory. The catalog can be seeded from either the embedded
+/// <c>ports.catalog.json</c> resource (default) or an external JSON file whose path is supplied
+/// via <see cref="InMemoryWrapperCatalog(string?)"/>.
+/// </summary>
+/// <remarks>
+/// The JSON schema is an array of objects with <c>command</c>, <c>wrapper</c>, and an optional
+/// <c>aliases</c> string array. All aliases are registered with the same wrapper as the primary
+/// command name.
+/// </remarks>
 public sealed class InMemoryWrapperCatalog : IWrapperCatalog
 {
     private const string WrapperModuleName = "Alloyed.DevOps.Multitool";
@@ -15,11 +26,25 @@ public sealed class InMemoryWrapperCatalog : IWrapperCatalog
 
     private readonly IReadOnlyDictionary<string, string> wrapperMap;
 
+    /// <summary>
+    /// Initializes the catalog from the embedded <c>ports.catalog.json</c> resource.
+    /// </summary>
     public InMemoryWrapperCatalog()
         : this(catalogSourcePath: null)
     {
     }
 
+    /// <summary>
+    /// Initializes the catalog from <paramref name="catalogSourcePath"/> when it is non-empty,
+    /// or falls back to the embedded resource when it is <see langword="null"/> or whitespace.
+    /// </summary>
+    /// <param name="catalogSourcePath">
+    /// Absolute path to an external <c>ports.catalog.json</c> file, or <see langword="null"/> to
+    /// use the embedded catalog.
+    /// </param>
+    /// <exception cref="System.InvalidOperationException">
+    /// Thrown when the JSON resource or file cannot be found, is empty, or contains invalid entries.
+    /// </exception>
     public InMemoryWrapperCatalog(string? catalogSourcePath)
     {
         wrapperMap = string.IsNullOrWhiteSpace(catalogSourcePath)
@@ -27,12 +52,14 @@ public sealed class InMemoryWrapperCatalog : IWrapperCatalog
             : LoadMappingsFromFile(catalogSourcePath);
     }
 
+    /// <inheritdoc/>
     public bool HasWrapper(string commandName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(commandName);
         return wrapperMap.ContainsKey(commandName);
     }
 
+    /// <inheritdoc/>
     public string GetWrapperName(string commandName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(commandName);
@@ -45,6 +72,7 @@ public sealed class InMemoryWrapperCatalog : IWrapperCatalog
         return wrapperName;
     }
 
+    /// <inheritdoc/>
     public ResolutionResult Resolve(IEnumerable<string> commands)
     {
         ArgumentNullException.ThrowIfNull(commands);
@@ -79,6 +107,7 @@ public sealed class InMemoryWrapperCatalog : IWrapperCatalog
             RequiredModules: requiredModules);
     }
 
+    /// <inheritdoc/>
     public IReadOnlyList<string> GetRequiredModules(IEnumerable<string> commands)
     {
         ArgumentNullException.ThrowIfNull(commands);
@@ -94,6 +123,7 @@ public sealed class InMemoryWrapperCatalog : IWrapperCatalog
         return new[] { WrapperModuleName };
     }
 
+    /// <inheritdoc/>
     public IReadOnlyDictionary<string, string> GetMappings()
     {
         return wrapperMap
@@ -101,6 +131,10 @@ public sealed class InMemoryWrapperCatalog : IWrapperCatalog
             .ToDictionary(static kv => kv.Key, static kv => kv.Value, StringComparer.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Loads catalog mappings from the embedded assembly resource.
+    /// </summary>
+    /// <exception cref="System.InvalidOperationException">Thrown when the embedded resource is missing.</exception>
     private static IReadOnlyDictionary<string, string> LoadMappingsFromEmbeddedCatalog()
     {
         var assembly = typeof(InMemoryWrapperCatalog).Assembly;
@@ -114,6 +148,10 @@ public sealed class InMemoryWrapperCatalog : IWrapperCatalog
         return BuildMapping(stream, $"embedded resource '{EmbeddedCatalogResourceName}'");
     }
 
+    /// <summary>
+    /// Loads catalog mappings from a JSON file at <paramref name="catalogSourcePath"/>.
+    /// </summary>
+    /// <exception cref="System.InvalidOperationException">Thrown when the file does not exist.</exception>
     private static IReadOnlyDictionary<string, string> LoadMappingsFromFile(string catalogSourcePath)
     {
         if (!File.Exists(catalogSourcePath))
@@ -126,6 +164,15 @@ public sealed class InMemoryWrapperCatalog : IWrapperCatalog
         return BuildMapping(stream, $"file '{catalogSourcePath}'");
     }
 
+    /// <summary>
+    /// Deserializes <paramref name="stream"/> as a <c>PortCatalogEntry</c> array and constructs
+    /// the case-insensitive command-to-wrapper dictionary, including all aliases.
+    /// </summary>
+    /// <param name="stream">Readable JSON stream.</param>
+    /// <param name="sourceDescription">Human-readable label used in error messages.</param>
+    /// <exception cref="System.InvalidOperationException">
+    /// Thrown when the JSON is malformed, the array is empty, or any entry has a blank command or wrapper.
+    /// </exception>
     private static IReadOnlyDictionary<string, string> BuildMapping(Stream stream, string sourceDescription)
     {
         List<PortCatalogEntry>? entries;
@@ -168,6 +215,9 @@ public sealed class InMemoryWrapperCatalog : IWrapperCatalog
         return map;
     }
 
+    /// <summary>
+    /// Internal DTO that mirrors one element of the catalog JSON array.
+    /// </summary>
     private sealed class PortCatalogEntry
     {
         public string Command { get; init; } = string.Empty;

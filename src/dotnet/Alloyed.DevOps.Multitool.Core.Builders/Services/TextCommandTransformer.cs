@@ -4,8 +4,28 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Alloyed.DevOps.Multitool.Core.Builders.Contracts;
 
+/// <summary>
+/// An <see cref="ICommandTransformer"/> that rewrites PowerShell command names in source text
+/// using pre-compiled regular expressions. A boolean code-mask is built first by a state machine
+/// identical to the one in the analyzer, so that replacements are applied only to actual code
+/// segments and never to string literals, here-strings, or line comments.
+/// </summary>
 public sealed partial class TextCommandTransformer : ICommandTransformer
 {
+    /// <summary>
+    /// Applies <paramref name="replacements"/> to <paramref name="sourceText"/>, skipping segments
+    /// that the code-mask identifies as non-code (strings, comments).
+    /// Replacements are applied longest-key-first to avoid partial matches.
+    /// </summary>
+    /// <param name="sourceText">Original PowerShell script text.</param>
+    /// <param name="replacements">
+    /// Map of <c>originalCommand → replacementCommand</c>. Entries where key and value are equal
+    /// (case-insensitive) or where either part is whitespace-only are silently skipped.
+    /// </param>
+    /// <returns>Rewritten script text, or <paramref name="sourceText"/> unchanged when there are no applicable replacements.</returns>
+    /// <exception cref="System.ArgumentNullException">
+    /// Thrown when <paramref name="sourceText"/> or <paramref name="replacements"/> is <see langword="null"/>.
+    /// </exception>
     public string Transform(string sourceText, IReadOnlyDictionary<string, string> replacements)
     {
         ArgumentNullException.ThrowIfNull(sourceText);
@@ -52,6 +72,12 @@ public sealed partial class TextCommandTransformer : ICommandTransformer
         return output.ToString();
     }
 
+    /// <summary>
+    /// Builds a boolean mask over <paramref name="content"/> where <see langword="true"/> means the
+    /// character belongs to executable code and <see langword="false"/> means it is inside a string
+    /// literal, here-string, or line comment. Newlines are always classified as code so that line
+    /// boundaries are preserved.
+    /// </summary>
     private static bool[] BuildCodeMask(string content)
     {
         var mask = Enumerable.Repeat(true, content.Length).ToArray();
@@ -187,6 +213,11 @@ public sealed partial class TextCommandTransformer : ICommandTransformer
         return mask;
     }
 
+    /// <summary>
+    /// Returns <see langword="true"/> when the <c>@'</c> or <c>@"</c> sequence at
+    /// <paramref name="atIndex"/> is followed only by optional whitespace before a newline,
+    /// satisfying the PowerShell requirement for a valid here-string opening delimiter.
+    /// </summary>
     private static bool IsHereStringStart(string text, int atIndex)
     {
         var i = atIndex + 2;
@@ -204,6 +235,12 @@ public sealed partial class TextCommandTransformer : ICommandTransformer
         return true;
     }
 
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="text"/>[<paramref name="index"/>] is
+    /// <paramref name="quote"/> followed by <c>@</c>, with only whitespace between the start of
+    /// the line and <paramref name="index"/>, and only whitespace after <c>@</c> until the next
+    /// newline — the PowerShell rule for a valid here-string closing delimiter.
+    /// </summary>
     private static bool IsHereStringTerminator(string text, int index, char quote)
     {
         if (index + 1 >= text.Length || text[index] != quote || text[index + 1] != '@')
@@ -230,6 +267,10 @@ public sealed partial class TextCommandTransformer : ICommandTransformer
         return true;
     }
 
+    /// <summary>
+    /// Applies each regex replacement in <paramref name="ordered"/> to <paramref name="source"/>
+    /// sequentially, in the pre-sorted longest-key-first order.
+    /// </summary>
     private static string ApplyReplacements(string source, IReadOnlyList<(Regex Pattern, string Replacement)> ordered)
     {
         var current = source;
@@ -242,6 +283,7 @@ public sealed partial class TextCommandTransformer : ICommandTransformer
         return current;
     }
 
+    /// <summary>Internal state machine states used by <see cref="BuildCodeMask"/>.</summary>
     private enum ScanState
     {
         Normal,
