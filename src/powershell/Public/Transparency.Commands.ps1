@@ -1,4 +1,33 @@
 function Enable-AlloyedTransparencyMode {
+<#
+.SYNOPSIS
+    Enables Alloyed transparency mode for the current process.
+.DESCRIPTION
+    Activates decorator-level event logging by setting the in-process transparency override
+    flag and writing the profile and verbose preference to process-scoped environment
+    variables. Unless SkipSessionMode is specified, command-interception session mode is also
+    enabled so that Alloyed wrapper functions intercept calls made during the session.
+.PARAMETER SkipSessionMode
+    When specified, command-interception (session mode) is not enabled; only the transparency
+    logging flag is set.
+.PARAMETER OutputMode
+    Selects the console rendering back-end (Plain or Rich) to use while transparency is active.
+    When omitted, the current session override is preserved.
+.PARAMETER Quiet
+    Activates transparency without setting the verbose flag. Decorator events are emitted at
+    reduced verbosity (operation name only for the minimal profile).
+.PARAMETER Profile
+    Transparency profile: minimal (operation name only), standard (high-signal tags), or
+    debug (all tags). Defaults to standard.
+.OUTPUTS
+    PSCustomObject from Get-AlloyedTransparencyModeStatus.
+.EXAMPLE
+    PS> Enable-AlloyedTransparencyMode
+.EXAMPLE
+    PS> Enable-AlloyedTransparencyMode -Profile debug -OutputMode Rich
+.EXAMPLE
+    PS> Enable-AlloyedTransparencyMode -SkipSessionMode -Quiet
+#>
     [CmdletBinding()]
     param(
         [Parameter()] [switch]$SkipSessionMode,
@@ -26,6 +55,18 @@ function Enable-AlloyedTransparencyMode {
 }
 
 function Disable-AlloyedTransparencyMode {
+<#
+.SYNOPSIS
+    Disables Alloyed transparency mode for the current process.
+.DESCRIPTION
+    Clears the in-process transparency override flag and removes the ALLOYED_TRANSPARENCY_VERBOSE
+    and ALLOYED_TRANSPARENCY_PROFILE environment variables from the process scope. The console
+    output mode override is also cleared. Does not automatically disable session mode.
+.OUTPUTS
+    PSCustomObject from Get-AlloyedTransparencyModeStatus.
+.EXAMPLE
+    PS> Disable-AlloyedTransparencyMode
+#>
     [CmdletBinding()]
     param()
 
@@ -37,6 +78,26 @@ function Disable-AlloyedTransparencyMode {
 }
 
 function Get-AlloyedTransparencyModeStatus {
+<#
+.SYNOPSIS
+    Returns the current Alloyed transparency mode status.
+.DESCRIPTION
+    Reads the live in-process state to report whether transparency is enabled, what triggered
+    it (explicit override vs. configuration), whether session mode is active, the current
+    console output mode, verbosity setting, and active transparency profile.
+.OUTPUTS
+    PSCustomObject with properties:
+      Enabled         — [bool] whether transparency is currently active.
+      Override        — [bool|string] $true/$false when set explicitly; '<config>' when driven by configuration.
+      SessionModeEnabled — [bool] whether command-interception session mode is active.
+      OutputMode      — [string] active console output mode (Plain or Rich).
+      Verbose         — [string] value of ALLOYED_TRANSPARENCY_VERBOSE ('true', 'false', or $null).
+      Profile         — [string] value of ALLOYED_TRANSPARENCY_PROFILE, or $null when unset.
+.EXAMPLE
+    PS> Get-AlloyedTransparencyModeStatus
+.EXAMPLE
+    PS> (Get-AlloyedTransparencyModeStatus).Enabled
+#>
     [CmdletBinding()]
     param()
 
