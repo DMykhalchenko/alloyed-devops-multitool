@@ -92,7 +92,7 @@ jobs:
   publish-preview:
     name: gha/publish-preview
     needs: integration-tests
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/main' }}
 
     env:
