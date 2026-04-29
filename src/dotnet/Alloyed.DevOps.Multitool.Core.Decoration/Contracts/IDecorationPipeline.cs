@@ -1,6 +1,6 @@
 namespace Alloyed.DevOps.Multitool.Core.Decoration.Contracts;
 
-using Alloyed.DevOps.Multitool.Core.Decoration.Models;
+using Models;
 
 /// <summary>
 /// Composes a set of <see cref="IDecorator"/> instances into a single execution chain and invokes

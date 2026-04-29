@@ -1,8 +1,8 @@
 namespace Alloyed.DevOps.Multitool.Core.Ast.Services;
 
 using System.Management.Automation.Language;
-using Alloyed.DevOps.Multitool.Core.Ast.Contracts;
-using Alloyed.DevOps.Multitool.Core.Ast.Models;
+using Contracts;
+using Models;
 
 /// <summary>
 /// An <see cref="IScriptAnalyzer"/> implementation backed by the PowerShell

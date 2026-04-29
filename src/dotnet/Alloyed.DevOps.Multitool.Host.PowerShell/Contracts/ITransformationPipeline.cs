@@ -1,6 +1,6 @@
 namespace Alloyed.DevOps.Multitool.Host.PowerShell.Contracts;
 
-using Alloyed.DevOps.Multitool.Host.PowerShell.Models;
+using Models;
 
 /// <summary>
 /// Orchestrates the end-to-end script transformation workflow: validation, AST analysis,

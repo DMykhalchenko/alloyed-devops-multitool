@@ -1,8 +1,8 @@
 namespace Alloyed.DevOps.Multitool.Core.Decoration.Decorators;
 
 using System.Diagnostics;
-using Alloyed.DevOps.Multitool.Core.Decoration.Contracts;
-using Alloyed.DevOps.Multitool.Core.Decoration.Models;
+using Contracts;
+using Models;
 
 /// <summary>
 /// A decorator (priority 650, inside <see cref="ObservabilityDecorator"/>) that emits detailed

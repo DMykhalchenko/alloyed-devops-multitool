@@ -1,7 +1,7 @@
 namespace Alloyed.DevOps.Multitool.Core.Decoration.Services;
 
-using Alloyed.DevOps.Multitool.Core.Decoration.Contracts;
-using Alloyed.DevOps.Multitool.Core.Decoration.Models;
+using Contracts;
+using Models;
 
 /// <summary>
 /// An <see cref="IDecorationSink"/> that writes each <see cref="DecorationEvent"/> as a single

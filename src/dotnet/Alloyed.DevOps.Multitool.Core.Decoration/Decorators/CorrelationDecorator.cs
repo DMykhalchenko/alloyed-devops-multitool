@@ -1,7 +1,7 @@
 namespace Alloyed.DevOps.Multitool.Core.Decoration.Decorators;
 
-using Alloyed.DevOps.Multitool.Core.Decoration.Contracts;
-using Alloyed.DevOps.Multitool.Core.Decoration.Models;
+using Contracts;
+using Models;
 
 /// <summary>
 /// A decorator (priority 800) that ensures every operation has a unique correlation ID stored in

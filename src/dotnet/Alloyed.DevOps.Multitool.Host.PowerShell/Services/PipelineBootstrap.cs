@@ -6,8 +6,8 @@ using Alloyed.DevOps.Multitool.Core.Builders.Contracts;
 using Alloyed.DevOps.Multitool.Core.Builders.Services;
 using Alloyed.DevOps.Multitool.Core.Catalog.Contracts;
 using Alloyed.DevOps.Multitool.Core.Catalog.Services;
-using Alloyed.DevOps.Multitool.Host.PowerShell.Contracts;
-using Alloyed.DevOps.Multitool.Host.PowerShell.Models;
+using Contracts;
+using Models;
 
 /// <summary>
 /// Static factory that wires up the full transformation pipeline and its dependencies without

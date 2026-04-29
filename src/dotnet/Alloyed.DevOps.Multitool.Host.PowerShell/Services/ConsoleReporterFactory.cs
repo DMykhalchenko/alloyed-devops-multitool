@@ -1,6 +1,6 @@
 namespace Alloyed.DevOps.Multitool.Host.PowerShell.Services;
 
-using Alloyed.DevOps.Multitool.Host.PowerShell.Contracts;
+using Contracts;
 
 /// <summary>
 /// Creates the appropriate <see cref="IConsoleReporter"/> based on the requested output mode and

@@ -1,8 +1,8 @@
 namespace Alloyed.DevOps.Multitool.Core.Ast.Services;
 
 using System.Text.RegularExpressions;
-using Alloyed.DevOps.Multitool.Core.Ast.Contracts;
-using Alloyed.DevOps.Multitool.Core.Ast.Models;
+using Contracts;
+using Models;
 
 /// <summary>
 /// A lightweight, regex-based implementation of <see cref="IScriptAnalyzer"/> that operates without

@@ -1,6 +1,6 @@
 namespace Alloyed.DevOps.Multitool.Core.Decoration.Contracts;
 
-using Alloyed.DevOps.Multitool.Core.Decoration.Models;
+using Models;
 
 /// <summary>
 /// Receives <see cref="DecorationEvent"/> entries emitted by decorators during execution.

@@ -1,8 +1,8 @@
 namespace Alloyed.DevOps.Multitool.Core.Builders.Services;
 
 using System.Text;
-using Alloyed.DevOps.Multitool.Core.Builders.Contracts;
-using Alloyed.DevOps.Multitool.Core.Builders.Models;
+using Contracts;
+using Models;
 
 /// <summary>
 /// An <see cref="IModuleBuilder"/> that writes a minimal but standards-compliant PowerShell module:

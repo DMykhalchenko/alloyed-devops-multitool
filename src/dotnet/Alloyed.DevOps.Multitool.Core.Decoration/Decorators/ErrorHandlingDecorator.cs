@@ -1,7 +1,7 @@
 namespace Alloyed.DevOps.Multitool.Core.Decoration.Decorators;
 
-using Alloyed.DevOps.Multitool.Core.Decoration.Contracts;
-using Alloyed.DevOps.Multitool.Core.Decoration.Models;
+using Contracts;
+using Models;
 
 /// <summary>
 /// A decorator (priority 1000, outermost by default) that catches any unhandled exception from

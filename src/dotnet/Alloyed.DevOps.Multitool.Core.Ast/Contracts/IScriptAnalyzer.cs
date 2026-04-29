@@ -1,6 +1,6 @@
 namespace Alloyed.DevOps.Multitool.Core.Ast.Contracts;
 
-using Alloyed.DevOps.Multitool.Core.Ast.Models;
+using Models;
 
 /// <summary>
 /// Analyzes PowerShell scripts and extracts command usages and parse diagnostics.

@@ -1,7 +1,7 @@
 namespace Alloyed.DevOps.Multitool.Host.PowerShell.Services;
 
 using System.Text.Json;
-using Alloyed.DevOps.Multitool.Host.PowerShell.Models;
+using Models;
 
 /// <summary>
 /// Loads <see cref="RuntimeConfiguration"/> from a layered hierarchy of sources applied in

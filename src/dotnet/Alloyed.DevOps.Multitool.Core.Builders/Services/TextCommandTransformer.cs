@@ -2,7 +2,7 @@ namespace Alloyed.DevOps.Multitool.Core.Builders.Services;
 
 using System.Text;
 using System.Text.RegularExpressions;
-using Alloyed.DevOps.Multitool.Core.Builders.Contracts;
+using Contracts;
 
 /// <summary>
 /// An <see cref="ICommandTransformer"/> that rewrites PowerShell command names in source text

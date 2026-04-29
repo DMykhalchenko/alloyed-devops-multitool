@@ -5,8 +5,8 @@ using Alloyed.DevOps.Multitool.Core.Ast.Models;
 using Alloyed.DevOps.Multitool.Core.Builders.Contracts;
 using Alloyed.DevOps.Multitool.Core.Builders.Models;
 using Alloyed.DevOps.Multitool.Core.Catalog.Contracts;
-using Alloyed.DevOps.Multitool.Host.PowerShell.Contracts;
-using Alloyed.DevOps.Multitool.Host.PowerShell.Models;
+using Contracts;
+using Models;
 
 /// <summary>
 /// The main <see cref="ITransformationPipeline"/> implementation. Orchestrates the following

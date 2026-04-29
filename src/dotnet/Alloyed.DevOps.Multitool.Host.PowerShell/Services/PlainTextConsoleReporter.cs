@@ -1,6 +1,6 @@
 namespace Alloyed.DevOps.Multitool.Host.PowerShell.Services;
 
-using Alloyed.DevOps.Multitool.Host.PowerShell.Contracts;
+using Contracts;
 
 /// <summary>
 /// An <see cref="IConsoleReporter"/> that writes plain, uncoloured text to a

@@ -1,6 +1,6 @@
 namespace Alloyed.DevOps.Multitool.Core.Decoration.Contracts;
 
-using Alloyed.DevOps.Multitool.Core.Decoration.Models;
+using Models;
 
 /// <summary>
 /// A single cross-cutting concern that wraps a unit of work. Decorators are composed into a

@@ -1,6 +1,6 @@
 namespace Alloyed.DevOps.Multitool.Core.Catalog.Contracts;
 
-using Alloyed.DevOps.Multitool.Core.Catalog.Models;
+using Models;
 
 /// <summary>
 /// Provides a lookup table that maps native PowerShell commands to their Alloyed wrapper equivalents

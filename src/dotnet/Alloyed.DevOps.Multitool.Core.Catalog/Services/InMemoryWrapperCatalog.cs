@@ -1,8 +1,8 @@
 namespace Alloyed.DevOps.Multitool.Core.Catalog.Services;
 
 using System.Text.Json;
-using Alloyed.DevOps.Multitool.Core.Catalog.Contracts;
-using Alloyed.DevOps.Multitool.Core.Catalog.Models;
+using Contracts;
+using Models;
 
 /// <summary>
 /// An <see cref="IWrapperCatalog"/> that loads the command-to-wrapper mapping once at construction

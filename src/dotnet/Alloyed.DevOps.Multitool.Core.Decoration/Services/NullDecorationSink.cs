@@ -1,7 +1,7 @@
 namespace Alloyed.DevOps.Multitool.Core.Decoration.Services;
 
-using Alloyed.DevOps.Multitool.Core.Decoration.Contracts;
-using Alloyed.DevOps.Multitool.Core.Decoration.Models;
+using Contracts;
+using Models;
 
 /// <summary>
 /// A no-op <see cref="IDecorationSink"/> that silently discards all <see cref="DecorationEvent"/>

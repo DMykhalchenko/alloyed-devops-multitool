@@ -1,6 +1,6 @@
 namespace Alloyed.DevOps.Multitool.Host.PowerShell.Services;
 
-using Alloyed.DevOps.Multitool.Host.PowerShell.Contracts;
+using Contracts;
 using Spectre.Console;
 
 /// <summary>

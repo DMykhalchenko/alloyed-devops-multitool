@@ -1,6 +1,6 @@
 namespace Alloyed.DevOps.Multitool.Core.Builders.Contracts;
 
-using Alloyed.DevOps.Multitool.Core.Builders.Models;
+using Models;
 
 /// <summary>
 /// Creates the on-disk artifacts that constitute a PowerShell module from a
