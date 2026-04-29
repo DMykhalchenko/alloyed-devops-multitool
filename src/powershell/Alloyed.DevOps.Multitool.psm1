@@ -239,38 +239,71 @@ function Initialize-AlloyedRuntimeConfig {
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter()] [string]$BasePath = (Get-AlloyedProjectRoot),
-        [Parameter()] [switch]$Force
+        [Parameter()] [switch]$Force,
+        [Parameter()] [bool]$ApplyToCurrentSession = $true
     )
 
-    Initialize-AlloyedInternalSpectreRuntime
+    $useSpectre = $true
+    try {
+        Initialize-AlloyedInternalSpectreRuntime
+    } catch {
+        $useSpectre = $false
+        Write-Verbose "Spectre runtime unavailable, using plain prompts. $($_.Exception.Message)"
+    }
 
     $configPath = Get-AlloyedRuntimeConfigFilePath -BasePath $BasePath
     if ((Test-Path -LiteralPath $configPath) -and -not $Force.IsPresent) {
         throw "Config already exists at '$configPath'. Use -Force to overwrite."
     }
 
-    $outputPrompt = [Spectre.Console.SelectionPrompt[string]]::new()
-    $null = $outputPrompt.Title("Select [green]console output mode[/]:")
-    $null = $outputPrompt.AddChoices([string[]]@('Plain', 'Rich'))
-    $outputMode = [Spectre.Console.AnsiConsole]::Prompt[string]($outputPrompt)
+    if ($useSpectre) {
+        try {
+            $outputPrompt = [Spectre.Console.SelectionPrompt[string]]::new()
+            $outputPrompt.Title = "Select console output mode:"
+            $null = $outputPrompt.AddChoice('Plain')
+            $null = $outputPrompt.AddChoice('Rich')
+            $outputMode = [Spectre.Console.AnsiConsole]::Prompt[string]($outputPrompt)
 
-    $transparencyPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable [yellow]transparency[/] by default?")
-    $enableTransparency = [Spectre.Console.AnsiConsole]::Prompt[bool]($transparencyPrompt)
+            $transparencyPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable transparency by default?")
+            $enableTransparency = [Spectre.Console.AnsiConsole]::Prompt[bool]($transparencyPrompt)
 
-    $sessionPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable [yellow]session mode[/] by default?")
-    $enableSession = [Spectre.Console.AnsiConsole]::Prompt[bool]($sessionPrompt)
+            $sessionPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable session mode by default?")
+            $enableSession = [Spectre.Console.AnsiConsole]::Prompt[bool]($sessionPrompt)
 
-    $retryPrompt = [Spectre.Console.SelectionPrompt[string]]::new()
-    $null = $retryPrompt.Title("Select [green]runtime retry policy[/]:")
-    $null = $retryPrompt.AddChoices([string[]]@('0', '1', '2', '3'))
-    $maxRetriesRaw = [Spectre.Console.AnsiConsole]::Prompt[string]($retryPrompt)
-    $maxRetries = [int]$maxRetriesRaw
+            $retryPrompt = [Spectre.Console.SelectionPrompt[string]]::new()
+            $retryPrompt.Title = "Select runtime retry policy:"
+            $null = $retryPrompt.AddChoice('0')
+            $null = $retryPrompt.AddChoice('1')
+            $null = $retryPrompt.AddChoice('2')
+            $null = $retryPrompt.AddChoice('3')
+            $maxRetriesRaw = [Spectre.Console.AnsiConsole]::Prompt[string]($retryPrompt)
+            $maxRetries = [int]$maxRetriesRaw
 
-    $backoffPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable [yellow]exponential backoff[/]?")
-    $enableBackoff = [Spectre.Console.AnsiConsole]::Prompt[bool]($backoffPrompt)
+            $backoffPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable exponential backoff?")
+            $enableBackoff = [Spectre.Console.AnsiConsole]::Prompt[bool]($backoffPrompt)
 
-    $previewPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable runtime [yellow]preview logs[/]?")
-    $enablePreview = [Spectre.Console.AnsiConsole]::Prompt[bool]($previewPrompt)
+            $previewPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable runtime preview logs?")
+            $enablePreview = [Spectre.Console.AnsiConsole]::Prompt[bool]($previewPrompt)
+        } catch {
+            $useSpectre = $false
+            Write-Verbose "Spectre prompts failed, using plain prompts. $($_.Exception.Message)"
+        }
+    }
+
+    if (-not $useSpectre) {
+        $outputModeInput = Read-Host "Output mode [Plain/Rich] (Plain)"
+        if ($outputModeInput -match '^(?i)rich$') { $outputMode = 'Rich' } else { $outputMode = 'Plain' }
+
+        $enableTransparency = ((Read-Host "Enable transparency by default? [y/n] (y)") -notmatch '^(?i)n')
+        $enableSession = ((Read-Host "Enable session mode by default? [y/n] (n)") -match '^(?i)y')
+
+        $maxRetriesInput = Read-Host "Runtime max retries [0-3] (1)"
+        if (-not ($maxRetriesInput -match '^[0-3]$')) { $maxRetriesInput = '1' }
+        $maxRetries = [int]$maxRetriesInput
+
+        $enableBackoff = ((Read-Host "Enable exponential backoff? [y/n] (y)") -notmatch '^(?i)n')
+        $enablePreview = ((Read-Host "Enable runtime preview logs? [y/n] (n)") -match '^(?i)y')
+    }
 
     $runtimeConfig = @{
         Alloyed = @{
@@ -302,19 +335,46 @@ function Initialize-AlloyedRuntimeConfig {
         [System.Environment]::SetEnvironmentVariable('ALLOYED_RUNTIME_MAX_RETRIES', [string]$maxRetries, 'Process')
         [System.Environment]::SetEnvironmentVariable('ALLOYED_RUNTIME_EXPONENTIAL_BACKOFF', [string]$enableBackoff, 'Process')
         [System.Environment]::SetEnvironmentVariable('ALLOYED_RUNTIME_PREVIEW', [string]$enablePreview, 'Process')
+
+        if ($ApplyToCurrentSession) {
+            if ($enableTransparency) {
+                $null = Enable-AlloyedTransparencyMode -SkipSessionMode:(-not $enableSession) -OutputMode $outputMode
+            } else {
+                $null = Disable-AlloyedTransparencyMode
+                if ($script:SessionModeEnabled) {
+                    $null = Disable-AlloyedSessionMode
+                }
+            }
+        }
     }
 
-    $table = [Spectre.Console.Table]::new()
-    $null = $table.AddColumn('Setting')
-    $null = $table.AddColumn('Value')
-    $null = $table.AddRow('ConfigPath', $configPath)
-    $null = $table.AddRow('OutputMode (process)', $outputMode)
-    $null = $table.AddRow('EnableTransparency', [string]$enableTransparency)
-    $null = $table.AddRow('SessionEnabled', [string]$enableSession)
-    $null = $table.AddRow('RuntimeMaxRetries (process)', [string]$maxRetries)
-    $null = $table.AddRow('RuntimeExponentialBackoff (process)', [string]$enableBackoff)
-    $null = $table.AddRow('RuntimePreview (process)', [string]$enablePreview)
-    [Spectre.Console.AnsiConsole]::Write($table)
+    if ($useSpectre) {
+        try {
+            $table = [Spectre.Console.Table]::new()
+            $null = $table.AddColumn('Setting')
+            $null = $table.AddColumn('Value')
+            $null = $table.AddRow('ConfigPath', $configPath)
+            $null = $table.AddRow('OutputMode (process)', $outputMode)
+            $null = $table.AddRow('EnableTransparency', [string]$enableTransparency)
+            $null = $table.AddRow('SessionEnabled', [string]$enableSession)
+            $null = $table.AddRow('RuntimeMaxRetries (process)', [string]$maxRetries)
+            $null = $table.AddRow('RuntimeExponentialBackoff (process)', [string]$enableBackoff)
+            $null = $table.AddRow('RuntimePreview (process)', [string]$enablePreview)
+            [Spectre.Console.AnsiConsole]::Write($table)
+        } catch {
+            $useSpectre = $false
+        }
+    }
+
+    if (-not $useSpectre) {
+        Write-Host "ConfigPath                : $configPath"
+        Write-Host "OutputMode                : $outputMode"
+        Write-Host "EnableTransparency        : $enableTransparency"
+        Write-Host "SessionEnabled            : $enableSession"
+        Write-Host "RuntimeMaxRetries         : $maxRetries"
+        Write-Host "RuntimeExponentialBackoff : $enableBackoff"
+        Write-Host "RuntimePreview            : $enablePreview"
+    }
 
     [pscustomobject]@{
         ConfigPath = $configPath
@@ -555,6 +615,7 @@ function Invoke-AlloyedDecoratedCommand {
     $tags['operation'] = $Operation
     $tags['enableTransparency'] = (Resolve-AlloyedTransparencyEnabled).ToString().ToLowerInvariant()
     $tags['transparencyVerbose'] = [System.Environment]::GetEnvironmentVariable('ALLOYED_TRANSPARENCY_VERBOSE')
+    $tags['transparencyProfile'] = [System.Environment]::GetEnvironmentVariable('ALLOYED_TRANSPARENCY_PROFILE')
 
     foreach ($key in $Parameters.Keys) {
         $value = $Parameters[$key]
@@ -795,6 +856,15 @@ function Enable-AlloyedSessionMode {
     $catalog = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateCatalog()
     $mappings = $catalog.GetMappings()
     $nativeMap = Get-AlloyedNativeCommandMap
+    $protectedCommands = @(
+        'Write-Host',
+        'Write-Progress',
+        'Read-Host',
+        'Get-Command',
+        'Set-Alias',
+        'Remove-Item',
+        'Set-Item'
+    )
 
     $applied = New-Object System.Collections.Generic.List[string]
     $skipped = New-Object System.Collections.Generic.List[string]
@@ -803,8 +873,18 @@ function Enable-AlloyedSessionMode {
 
     foreach ($entry in ($mappings.GetEnumerator() | Sort-Object Key)) {
         $name = $entry.Key
+        if ($protectedCommands -contains $name) {
+            $skipped.Add($name)
+            continue
+        }
+
         $sourceCommand = Get-Command -Name $name -ErrorAction SilentlyContinue
         if (-not $sourceCommand) {
+            $skipped.Add($name)
+            continue
+        }
+
+        if ($sourceCommand.CommandType -eq 'Function' -and $sourceCommand.Source -eq 'Alloyed.DevOps.Multitool') {
             $skipped.Add($name)
             continue
         }
@@ -888,7 +968,16 @@ function Disable-AlloyedSessionMode {
         }
 
         if (-not [string]::IsNullOrWhiteSpace($prior.AliasDefinition)) {
-            Set-Alias -Name $name -Value $prior.AliasDefinition -Scope Global -Force
+            try {
+                Remove-Item -LiteralPath ("Alias:{0}" -f $name) -Force -ErrorAction SilentlyContinue
+                if ($null -ne $prior.AliasOptions) {
+                    Set-Alias -Name $name -Value $prior.AliasDefinition -Scope Global -Option $prior.AliasOptions -Force
+                } else {
+                    Set-Alias -Name $name -Value $prior.AliasDefinition -Scope Global -Force
+                }
+            } catch {
+                Write-Verbose ("Failed to restore alias '{0}': {1}" -f $name, $_.Exception.Message)
+            }
         }
     }
 
@@ -915,7 +1004,9 @@ function Enable-AlloyedTransparencyMode {
     [CmdletBinding()]
     param(
         [Parameter()] [switch]$SkipSessionMode,
-        [Parameter()] [ValidateSet('Plain','Rich')] [string]$OutputMode
+        [Parameter()] [ValidateSet('Plain','Rich')] [string]$OutputMode,
+        [Parameter()] [switch]$Quiet,
+        [Parameter()] [ValidateSet('minimal','standard','debug')] [string]$Profile = 'standard'
     )
 
     if (-not $SkipSessionMode.IsPresent) {
@@ -927,6 +1018,12 @@ function Enable-AlloyedTransparencyMode {
     }
 
     $script:TransparencyModeOverride = $true
+    if ($Quiet.IsPresent) {
+        [System.Environment]::SetEnvironmentVariable('ALLOYED_TRANSPARENCY_VERBOSE', 'false', 'Process')
+    } else {
+        [System.Environment]::SetEnvironmentVariable('ALLOYED_TRANSPARENCY_VERBOSE', 'true', 'Process')
+    }
+    [System.Environment]::SetEnvironmentVariable('ALLOYED_TRANSPARENCY_PROFILE', $Profile, 'Process')
     Get-AlloyedTransparencyModeStatus
 }
 
@@ -936,6 +1033,8 @@ function Disable-AlloyedTransparencyMode {
 
     $script:TransparencyModeOverride = $false
     $script:ConsoleOutputModeOverride = $null
+    [System.Environment]::SetEnvironmentVariable('ALLOYED_TRANSPARENCY_VERBOSE', $null, 'Process')
+    [System.Environment]::SetEnvironmentVariable('ALLOYED_TRANSPARENCY_PROFILE', $null, 'Process')
     Get-AlloyedTransparencyModeStatus
 }
 
@@ -983,5 +1082,7 @@ function Get-AlloyedTransparencyModeStatus {
         Override = if ($null -eq $script:TransparencyModeOverride) { '<config>' } else { [bool]$script:TransparencyModeOverride }
         SessionModeEnabled = [bool]$script:SessionModeEnabled
         OutputMode = (Resolve-AlloyedConsoleOutputMode).ToString()
+        Verbose = [System.Environment]::GetEnvironmentVariable('ALLOYED_TRANSPARENCY_VERBOSE')
+        Profile = [System.Environment]::GetEnvironmentVariable('ALLOYED_TRANSPARENCY_PROFILE')
     }
 }

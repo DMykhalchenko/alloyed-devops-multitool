@@ -8,6 +8,7 @@ public sealed class TransparencyDecorator : IDecorator
 {
     public const string EnableTransparencyTag = "enableTransparency";
     public const string VerboseTransparencyTag = "transparencyVerbose";
+    public const string ProfileTransparencyTag = "transparencyProfile";
     private const string RedactedValue = "***REDACTED***";
 
     private static readonly string[] SensitiveKeyMarkers =
@@ -45,7 +46,8 @@ public sealed class TransparencyDecorator : IDecorator
     {
         var correlationId = context.GetTag(CorrelationDecorator.CorrelationIdTag);
         var verbose = bool.TryParse(context.GetTag(VerboseTransparencyTag), out var value) && value;
-        var tagSummary = BuildSanitizedTagSummary(context.Tags, verbose);
+        var profile = ResolveProfile(context.GetTag(ProfileTransparencyTag), verbose);
+        var tagSummary = BuildSanitizedTagSummary(context.Tags, profile);
 
         _sink.Write(new DecorationEvent(
             Operation: context.Operation,
@@ -53,7 +55,7 @@ public sealed class TransparencyDecorator : IDecorator
             Stage: DecorationStage.Enter,
             ElapsedMilliseconds: 0,
             CorrelationId: correlationId,
-            Message: $"phase=enter {tagSummary}"));
+            Message: BuildMessage("enter", context.Operation, correlationId, tagSummary, null, profile)));
 
         var sw = Stopwatch.StartNew();
         try
@@ -67,7 +69,7 @@ public sealed class TransparencyDecorator : IDecorator
                 Stage: DecorationStage.Exit,
                 ElapsedMilliseconds: sw.ElapsedMilliseconds,
                 CorrelationId: correlationId,
-                Message: $"phase=exit {tagSummary}"));
+                Message: BuildMessage("exit", context.Operation, correlationId, tagSummary, null, profile)));
 
             return result;
         }
@@ -81,13 +83,13 @@ public sealed class TransparencyDecorator : IDecorator
                 Stage: DecorationStage.Error,
                 ElapsedMilliseconds: sw.ElapsedMilliseconds,
                 CorrelationId: correlationId,
-                Message: $"phase=error exception={ex.GetType().Name} {tagSummary}"));
+                Message: BuildMessage("error", context.Operation, correlationId, tagSummary, ex.GetType().Name, profile)));
 
             throw;
         }
     }
 
-    private static string BuildSanitizedTagSummary(IDictionary<string, string> tags, bool verbose)
+    private static string BuildSanitizedTagSummary(IDictionary<string, string> tags, string profile)
     {
         if (tags.Count == 0)
         {
@@ -96,7 +98,7 @@ public sealed class TransparencyDecorator : IDecorator
 
         var pairs = tags
             .OrderBy(static t => t.Key, StringComparer.OrdinalIgnoreCase)
-            .Where(kv => verbose || IsHighSignalTag(kv.Key))
+            .Where(kv => ShouldIncludeTag(kv.Key, profile))
             .Select(static kv =>
             {
                 var value = ShouldRedact(kv.Key) ? RedactedValue : kv.Value;
@@ -110,6 +112,48 @@ public sealed class TransparencyDecorator : IDecorator
         }
 
         return $"tags.count={tags.Count} tags.preview={preview}";
+    }
+
+    private static string BuildMessage(string phase, string operation, string? correlationId, string tagSummary, string? exception, string profile)
+    {
+        return profile switch
+        {
+            "minimal" => exception is null
+                ? $"[{phase}] {operation}"
+                : $"[{phase}] {operation} ex={exception}",
+            "debug" => exception is null
+                ? $"phase={phase} op={operation} corr={correlationId ?? "-"} profile={profile} {tagSummary}"
+                : $"phase={phase} op={operation} corr={correlationId ?? "-"} profile={profile} exception={exception} {tagSummary}",
+            _ => exception is null
+                ? $"phase={phase} op={operation} corr={correlationId ?? "-"} profile={profile} {tagSummary}"
+                : $"phase={phase} op={operation} corr={correlationId ?? "-"} profile={profile} exception={exception} {tagSummary}",
+        };
+    }
+
+    private static bool ShouldIncludeTag(string key, string profile)
+    {
+        return profile switch
+        {
+            "minimal" => false,
+            "standard" => IsHighSignalTag(key),
+            "debug" => true,
+            _ => IsHighSignalTag(key),
+        };
+    }
+
+    private static string ResolveProfile(string? rawProfile, bool verbose)
+    {
+        if (string.IsNullOrWhiteSpace(rawProfile))
+        {
+            return verbose ? "debug" : "standard";
+        }
+
+        return rawProfile.Trim().ToLowerInvariant() switch
+        {
+            "minimal" => "minimal",
+            "debug" => "debug",
+            _ => "standard",
+        };
     }
 
     private static bool IsHighSignalTag(string key)
