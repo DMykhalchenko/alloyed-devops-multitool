@@ -5,7 +5,7 @@
 
 `alloyed-devops-multitool` is a PowerShell modernization toolkit:
 
-- run legacy scripts through decorators without renaming commands,
+- run existing scripts through decorators without renaming commands,
 - transform scripts into wrapper-based modules,
 - control runtime behavior with explicit configuration.
 
@@ -31,25 +31,25 @@ Import module:
 Import-Module ./src/powershell/Alloyed.DevOps.Multitool.psd1 -Force
 ```
 
-Run a legacy script with decorators in one command:
+Run a script with decorators in one command:
 
 ```powershell
-Invoke-AlloyedScript -ScriptPath ./scripts/legacy.ps1
+Invoke-AlloyedScript -ScriptPath ./scripts/automation.ps1
 ```
 
 Bootstrap current session from config (recommended for iterative local work):
 
 ```powershell
-Start-AlloyedLegacySession
+Start-AlloyedSession
 # ...run scripts...
-Stop-AlloyedLegacySession
+Stop-AlloyedSession
 ```
 
 Manual mode (if you want full session control):
 
 ```powershell
 Enable-AlloyedTransparencyMode
-./scripts/legacy.ps1
+./scripts/automation.ps1
 Disable-AlloyedTransparencyMode
 ```
 
@@ -68,7 +68,7 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    S["Legacy Script (.ps1)"] --> M["PowerShell Module (alloyed-devops-multitool)"]
+    S["Script (.ps1)"] --> M["PowerShell Module (alloyed-devops-multitool)"]
     M --> P["Session interception (original command names)"]
     P --> R["Invoke-AlloyedCommandRuntime"]
     R --> D["Decoration Pipeline"]
@@ -84,8 +84,8 @@ flowchart TB
 Primary runtime commands:
 
 - `Invoke-AlloyedScript`
-- `Start-AlloyedLegacySession`
-- `Stop-AlloyedLegacySession`
+- `Start-AlloyedSession`
+- `Stop-AlloyedSession`
 - `Enable-AlloyedTransparencyMode`
 - `Disable-AlloyedTransparencyMode`
 - `Set-AlloyedTransparencyProfile`
@@ -154,7 +154,7 @@ Test-AlloyedTransform -ScriptPath ./samples/sample-transform-input.ps1
 
 ```mermaid
 flowchart LR
-    A["Legacy Script Execution"] --> B["Transparency + Decorators"]
+    A["Script Execution"] --> B["Transparency + Decorators"]
     B --> C["Runtime Policy Hardening"]
     C --> D["Port Coverage Expansion"]
     D --> E["Module Generation at Scale"]
@@ -181,7 +181,7 @@ pwsh -NoProfile -File ./dev.ps1 -Stage smoke
 
 - Installation from GitHub Packages: `docs/install-module.md`
 - Runtime configuration: `docs/runtime-configuration.md`
-- Legacy transparency quickstart: `docs/legacy-transparency-quickstart.md`
+- Transparency quickstart: `docs/transparency-quickstart.md`
 - Module access model: `docs/module-access-model.md`
 - Contracts and versioning: `docs/contracts-and-versioning.md`
 - Port architecture ADR: `docs/adr-0001-port-architecture-and-generation-contract.md`

@@ -1,11 +1,11 @@
-# Legacy Script Transparency Quickstart
+# Script Transparency Quickstart
 
-Use this flow to run existing scripts with decorators, without renaming commands:
+Use this flow to run scripts with decorators, without renaming commands:
 
 ```powershell
 Import-Module ./src/powershell/Alloyed.DevOps.Multitool.psd1 -Force
 Enable-AlloyedTransparencyMode
-./your-legacy-script.ps1
+./your-script.ps1
 Disable-AlloyedTransparencyMode
 ```
 

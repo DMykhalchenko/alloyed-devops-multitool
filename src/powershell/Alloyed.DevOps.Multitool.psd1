@@ -22,8 +22,8 @@
         'Set-AlloyedTransparencyProfile',
         'Get-AlloyedTransparencyModeStatus',
         'Invoke-AlloyedScript',
-        'Start-AlloyedLegacySession',
-        'Stop-AlloyedLegacySession',
+        'Start-AlloyedSession',
+        'Stop-AlloyedSession',
         'Initialize-AlloyedRuntimeConfig',
         'Apply-AlloyedRuntimeConfig',
         'Test-AlloyedRuntimeConfig'

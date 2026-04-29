@@ -4,7 +4,7 @@
 Implement a feature to build and export a call graph for PowerShell scripts to improve transparency, debugging, and migration validation.
 
 ## Why
-- Help users understand execution flow in legacy scripts.
+- Help users understand execution flow in scripts.
 - Make decorated/transparency behavior auditable.
 - Provide artifact output for CI diagnostics and documentation.
 
