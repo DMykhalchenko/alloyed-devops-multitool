@@ -15,6 +15,7 @@ out/
 .vs/
 .idea/
 .vscode/
+.claude/
 
 # Local environment/secrets
 .env
