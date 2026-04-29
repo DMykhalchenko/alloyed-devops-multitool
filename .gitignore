@@ -24,6 +24,7 @@ out/
 *.snk
 *.key
 *.pem
+src/config/
 
 # OS junk
 .DS_Store

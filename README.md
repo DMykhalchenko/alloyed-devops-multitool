@@ -23,7 +23,15 @@ Prerequisites:
 Import-Module ./src/powershell/Alloyed.DevOps.Multitool.psd1 -Force
 ```
 
-2. Transform script into module:
+2. Run an existing script with transparent decorators (no command renaming):
+
+```powershell
+Enable-AlloyedTransparencyMode
+./your-legacy-script.ps1
+Disable-AlloyedTransparencyMode
+```
+
+3. Transform script into module:
 
 ```powershell
 New-AlloyedModuleTransform `
@@ -33,13 +41,13 @@ New-AlloyedModuleTransform `
   -Force
 ```
 
-3. Validate transform only:
+4. Validate transform only:
 
 ```powershell
 Test-AlloyedTransform -ScriptPath ./samples/sample-transform-input.ps1
 ```
 
-4. Inspect mapping catalog:
+5. Inspect mapping catalog:
 
 ```powershell
 Get-AlloyedCatalog
@@ -86,10 +94,10 @@ pwsh -NoProfile -File ./tools/ports/Sync-PortsFromCatalog.ps1
 Runtime note:
 - Session mode now supports dynamic wrapper bootstrap from `ports.catalog.json`. This means transparency/session usage does not require running ports sync beforehand for missing wrappers.
 - Runtime execution policy can be tuned via environment variables:
-  - `ALLOYED_RUNTIME_MAX_RETRIES` (default `0`)
-  - `ALLOYED_RUNTIME_RETRY_DELAY_SEC` (default `2`)
-  - `ALLOYED_RUNTIME_EXPONENTIAL_BACKOFF` (`true|false`, default `false`)
-  - `ALLOYED_RUNTIME_PREVIEW` (`true|false`, default `false`)
+- `ALLOYED_RUNTIME_MAX_RETRIES` (default `0`)
+- `ALLOYED_RUNTIME_RETRY_DELAY_SEC` (default `2`)
+- `ALLOYED_RUNTIME_EXPONENTIAL_BACKOFF` (`true|false`, default `false`)
+- `ALLOYED_RUNTIME_PREVIEW` (`true|false`, default `false`)
 
 ## Runtime Config API
 
