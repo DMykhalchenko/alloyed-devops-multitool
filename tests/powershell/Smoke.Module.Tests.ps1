@@ -1,4 +1,6 @@
-param()
+param(
+    [switch]$CiQuiet
+)
 
 $ErrorActionPreference = 'Stop'
 
@@ -83,7 +85,12 @@ if ((Get-Command -Name Get-ChildItem).CommandType -ne 'Cmdlet') {
 }
 
 # Validate transparency toggle surface.
-$transparencyEnabled = Enable-AlloyedTransparencyMode
+$enableTransparencyParams = @{}
+if ($CiQuiet.IsPresent) {
+    $enableTransparencyParams['Quiet'] = $true
+    $enableTransparencyParams['Profile'] = 'minimal'
+}
+$transparencyEnabled = Enable-AlloyedTransparencyMode @enableTransparencyParams
 if (-not $transparencyEnabled.Enabled) {
     throw 'Enable-AlloyedTransparencyMode did not enable transparency mode.'
 }
@@ -100,7 +107,7 @@ if ($transparencyDisabled.Enabled) {
 $null = Disable-AlloyedSessionMode
 
 # Validate new one-shot session bootstrap API.
-$startedSession = Start-AlloyedSession -BasePath $sessionConfigBasePath -Profile minimal -QuietTransparency
+$startedSession = Start-AlloyedSession -BasePath $sessionConfigBasePath -Profile minimal -QuietTransparency:$CiQuiet
 if (-not $startedSession.Enabled) {
     throw 'Start-AlloyedSession did not enable transparency mode.'
 }
