@@ -2,8 +2,10 @@ namespace Alloyed.DevOps.Multitool.Tests.Integration.Pipeline;
 
 using System.Text;
 using Alloyed.DevOps.Multitool.Host.PowerShell.Contracts;
+using Alloyed.DevOps.Multitool.Host.PowerShell.Models;
 using Alloyed.DevOps.Multitool.Host.PowerShell.Services;
 using FluentAssertions;
+using Spectre.Console;
 
 public class ConsoleReporterIntegrationTests
 {
@@ -83,5 +85,82 @@ public class ConsoleReporterIntegrationTests
         output.Should().Contain("CommandsFound: 2");
         output.Should().Contain("MissingCommands: 2");
         output.Should().Contain("PIPELINE-FAIL-ON-SEVERITY");
+    }
+
+    [Fact]
+    public void PlainReporter_Should_RenderStructuredKeyValueTable()
+    {
+        var writer = new StringWriter(new StringBuilder());
+        IConsoleReporter reporter = new PlainTextConsoleReporter(writer);
+
+        reporter.WriteKeyValueTable(
+            "Summary",
+            new[]
+            {
+                new ConsoleKeyValueRow("CommandsFound", "3"),
+                new ConsoleKeyValueRow("CommandsReplaced", "2"),
+            });
+
+        var output = writer.ToString();
+        output.Should().Contain("Summary:");
+        output.Should().Contain("CommandsFound");
+        output.Should().Contain("CommandsReplaced");
+        output.Should().Contain("3");
+        output.Should().Contain("2");
+    }
+
+    [Fact]
+    public void SpectreReporter_Should_RenderStructuredKeyValueTable()
+    {
+        var writer = new StringWriter(new StringBuilder());
+        var console = AnsiConsole.Create(new AnsiConsoleSettings
+        {
+            Ansi = AnsiSupport.Yes,
+            ColorSystem = ColorSystemSupport.TrueColor,
+            Out = new AnsiConsoleOutput(writer),
+        });
+
+        IConsoleReporter reporter = new SpectreConsoleReporter(console);
+
+        reporter.WriteKeyValueTable(
+            "Summary",
+            new[]
+            {
+                new ConsoleKeyValueRow("CommandsFound", "3"),
+                new ConsoleKeyValueRow("CommandsReplaced", "2"),
+            });
+
+        var output = writer.ToString();
+        output.Should().Contain("Summary");
+        output.Should().Contain("CommandsFound");
+        output.Should().Contain("CommandsReplaced");
+        output.Should().Contain("Property");
+        output.Should().Contain("Value");
+    }
+
+    [Fact]
+    public void PipelineResultPresenter_Should_RenderSummaryBlock()
+    {
+        var writer = new StringWriter(new StringBuilder());
+        IConsoleReporter reporter = new PlainTextConsoleReporter(writer);
+        var result = new PipelineResult(
+            Success: true,
+            ModulePath: "C:\\out\\DemoModule",
+            CommandsFound: 4,
+            CommandsReplaced: 3,
+            MissingCommands: new[] { "Write-Thing" },
+            Diagnostics: Array.Empty<PipelineDiagnostic>(),
+            ErrorMessage: null);
+
+        PipelineResultConsolePresenter.WriteSummary(reporter, result, "New-AlloyedModuleTransform");
+
+        var output = writer.ToString();
+        output.Should().Contain("== New-AlloyedModuleTransform ==");
+        output.Should().Contain("[INFO] Pipeline completed successfully.");
+        output.Should().Contain("Summary:");
+        output.Should().Contain("CommandsFound");
+        output.Should().Contain("CommandsReplaced");
+        output.Should().Contain("MissingCommands");
+        output.Should().Contain("ModulePath");
     }
 }

@@ -29,7 +29,22 @@ public interface IConsoleReporter
     /// <param name="value">Associated value, may be empty.</param>
     /// <exception cref="System.ArgumentException">Thrown when <paramref name="key"/> is null or whitespace.</exception>
     void WriteKeyValue(string key, string value);
+
+    /// <summary>
+    /// Writes a structured key/value block. Rich renderers may display this as a table, while plain
+    /// renderers can fall back to aligned text lines.
+    /// </summary>
+    /// <param name="title">Optional section title shown above the block.</param>
+    /// <param name="rows">Ordered key/value rows to render.</param>
+    void WriteKeyValueTable(string? title, IReadOnlyList<ConsoleKeyValueRow> rows);
 }
+
+/// <summary>
+/// Represents one row in a structured console key/value block.
+/// </summary>
+/// <param name="Key">Human-readable row label.</param>
+/// <param name="Value">Associated row value.</param>
+public sealed record ConsoleKeyValueRow(string Key, string Value);
 
 /// <summary>
 /// Severity level passed to <see cref="IConsoleReporter.WriteMessage"/> to control output styling.

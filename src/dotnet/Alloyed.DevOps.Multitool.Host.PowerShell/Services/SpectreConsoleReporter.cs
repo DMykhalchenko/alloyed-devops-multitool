@@ -71,6 +71,33 @@ public sealed class SpectreConsoleReporter : IConsoleReporter
     }
 
     /// <summary>
+    /// Writes an optional title and renders key/value rows as a Spectre.Console table.
+    /// </summary>
+    /// <inheritdoc/>
+    public void WriteKeyValueTable(string? title, IReadOnlyList<ConsoleKeyValueRow> rows)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            console.MarkupLine($"[bold]{Escape(title)}[/]");
+        }
+
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .AddColumn("[grey]Property[/]")
+            .AddColumn("[grey]Value[/]");
+
+        foreach (var row in rows)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(row.Key);
+            table.AddRow(Escape(row.Key), Escape(row.Value ?? string.Empty));
+        }
+
+        console.Write(table);
+    }
+
+    /// <summary>
     /// Escapes Spectre.Console markup characters in <paramref name="value"/> so that they are
     /// rendered as literal text rather than interpreted as markup.
     /// </summary>

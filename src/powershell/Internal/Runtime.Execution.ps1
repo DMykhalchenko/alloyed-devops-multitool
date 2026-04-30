@@ -123,31 +123,7 @@ function Write-AlloyedPipelineResultSummary {
     )
 
     $reporter = Get-AlloyedConsoleReporter
-    $reporter.WriteHeader($Operation)
-
-    if ($Result.Success) {
-        $reporter.WriteMessage([Alloyed.DevOps.Multitool.Host.PowerShell.Contracts.ConsoleMessageLevel]::Info, 'Pipeline completed successfully.')
-    } else {
-        $reporter.WriteMessage([Alloyed.DevOps.Multitool.Host.PowerShell.Contracts.ConsoleMessageLevel]::Error, 'Pipeline failed.')
-    }
-
-    $reporter.WriteKeyValue('CommandsFound', [string]$Result.CommandsFound)
-    $reporter.WriteKeyValue('CommandsReplaced', [string]$Result.CommandsReplaced)
-    $reporter.WriteKeyValue('MissingCommands', [string]@($Result.MissingCommands).Count)
-
-    if (-not [string]::IsNullOrWhiteSpace($Result.ModulePath)) {
-        $reporter.WriteKeyValue('ModulePath', [string]$Result.ModulePath)
-    }
-
-    foreach ($diagnostic in @($Result.Diagnostics)) {
-        $level = switch ($diagnostic.Severity.ToString()) {
-            'Error' { [Alloyed.DevOps.Multitool.Host.PowerShell.Contracts.ConsoleMessageLevel]::Error; break }
-            'Warning' { [Alloyed.DevOps.Multitool.Host.PowerShell.Contracts.ConsoleMessageLevel]::Warning; break }
-            default { [Alloyed.DevOps.Multitool.Host.PowerShell.Contracts.ConsoleMessageLevel]::Info; break }
-        }
-
-        $reporter.WriteMessage($level, ("[{0}] {1}" -f @($diagnostic.Code, $diagnostic.Message)))
-    }
+    [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineResultConsolePresenter]::WriteSummary($reporter, $Result, $Operation)
 }
 
 function Invoke-AlloyedDecoratedCommand {

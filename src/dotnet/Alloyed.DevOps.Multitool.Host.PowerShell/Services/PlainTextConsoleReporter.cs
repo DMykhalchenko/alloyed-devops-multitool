@@ -58,4 +58,30 @@ public sealed class PlainTextConsoleReporter : IConsoleReporter
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         writer.WriteLine($"{key}: {value}");
     }
+
+    /// <summary>
+    /// Writes an optional title followed by each key/value row as plain aligned text.
+    /// </summary>
+    /// <inheritdoc/>
+    public void WriteKeyValueTable(string? title, IReadOnlyList<ConsoleKeyValueRow> rows)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            writer.WriteLine($"{title}:");
+        }
+
+        if (rows.Count == 0)
+        {
+            return;
+        }
+
+        var maxKeyLength = rows.Max(static row => row.Key?.Length ?? 0);
+        foreach (var row in rows)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(row.Key);
+            writer.WriteLine($"  {row.Key.PadRight(maxKeyLength)} : {row.Value}");
+        }
+    }
 }
