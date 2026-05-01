@@ -266,7 +266,7 @@ jobs:
           else
             gh release create "$tag" \
               --title "$tag" \
-              --notes "Preview release published to GitHub Packages." \
+              --generate-notes \
               --prerelease \
               --target "${{ github.sha }}"
           fi
