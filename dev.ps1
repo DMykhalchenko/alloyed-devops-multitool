@@ -177,10 +177,12 @@ switch ($Stage) {
         Invoke-Step -Name "Install git hooks" -Action {
             git config core.hooksPath .githooks
             if ($IsLinux -or $IsMacOS) {
+                chmod +x .githooks/pre-commit
                 chmod +x .githooks/pre-push
             }
         }
-        Write-Host "  pre-push hook active: build + format check + PS lint + unit tests" -ForegroundColor DarkGray
+        Write-Host "  pre-commit hook active: format check + PS lint" -ForegroundColor DarkGray
+        Write-Host "  pre-push   hook active: build + unit tests + integration tests" -ForegroundColor DarkGray
     }
 }
 
