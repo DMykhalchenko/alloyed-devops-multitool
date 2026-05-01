@@ -4,6 +4,7 @@
 **/TestResults/
 artifacts/
 out/
+src/powershell/lib/
 
 # Dotnet local state
 .dotnet-cli/

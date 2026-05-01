@@ -133,9 +133,12 @@ function Test-AlloyedTransform {
     }
 
     [pscustomobject]@{
+        PSTypeName = 'Alloyed.TransformValidationResult'
         Success = $result.Success
         CommandsFound = $result.CommandsFound
         CommandsReplaced = $result.CommandsReplaced
+        MissingCommandCount = @($result.MissingCommands).Count
+        DiagnosticCount = @($result.Diagnostics).Count
         MissingCommands = @($result.MissingCommands)
         Diagnostics = @($result.Diagnostics | ForEach-Object {
             [pscustomobject]@{
@@ -175,6 +178,7 @@ function Get-AlloyedCatalog {
 
     foreach ($item in $mappings.GetEnumerator() | Microsoft.PowerShell.Utility\Sort-Object Key) {
         [pscustomobject]@{
+            PSTypeName = 'Alloyed.CatalogMapping'
             Command = $item.Key
             Wrapper = $item.Value
         }
@@ -210,6 +214,14 @@ function Get-AlloyedRuntimeConfiguration {
     $configuration = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.PipelineBootstrap]::CreateRuntimeConfiguration($BasePath, $null)
 
     [pscustomobject]@{
+        PSTypeName = 'Alloyed.RuntimeConfiguration'
+        RuntimeFailOnSeverity = if ($null -eq $configuration.Runtime.FailOnSeverity) { $null } else { $configuration.Runtime.FailOnSeverity.ToString() }
+        DefaultOutputPath = $configuration.Runtime.DefaultOutputPath
+        SessionEnabled = $configuration.Session.Enabled
+        TransparencyEnabled = $configuration.Decoration.EnableTransparency
+        TransparencyProfile = $configuration.Decoration.TransparencyProfile.ToString().ToLowerInvariant()
+        MockingEnabled = $configuration.Mocking.Enabled
+        MockingMode = $configuration.Mocking.Mode.ToString()
         Runtime = [pscustomobject]@{
             FailOnSeverity = if ($null -eq $configuration.Runtime.FailOnSeverity) { $null } else { $configuration.Runtime.FailOnSeverity.ToString() }
             DefaultOutputPath = $configuration.Runtime.DefaultOutputPath

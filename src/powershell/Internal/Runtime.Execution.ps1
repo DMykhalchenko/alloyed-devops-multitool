@@ -4,7 +4,8 @@ function Initialize-AlloyedDecorationPipeline {
     Initialize-AlloyedHostAssembly
 
     $nullSink = [Alloyed.DevOps.Multitool.Core.Decoration.Services.NullDecorationSink]::new()
-    $consoleSink = [Alloyed.DevOps.Multitool.Core.Decoration.Services.ConsoleDecorationSink]::new()
+    $reporter = Get-AlloyedConsoleReporter
+    $consoleSink = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.ReporterDecorationSink]::new($reporter)
 
     $decorators = [System.Collections.Generic.List[Alloyed.DevOps.Multitool.Core.Decoration.Contracts.IDecorator]]::new()
     $decorators.Add([Alloyed.DevOps.Multitool.Core.Decoration.Decorators.ErrorHandlingDecorator]::new())
@@ -21,6 +22,18 @@ function Get-AlloyedConsoleReporter {
     $isInteractive = -not [System.Console]::IsOutputRedirected
     $mode = Resolve-AlloyedConsoleOutputMode
     return [Alloyed.DevOps.Multitool.Host.PowerShell.Services.ConsoleReporterFactory]::Create($mode, $isInteractive, $null)
+}
+
+function Write-AlloyedRuntimePreviewMessage {
+    param(
+        [Parameter(Mandatory)] [ValidateSet('Info','Warning','Error')] [string]$Level,
+        [Parameter(Mandatory)] [string]$Message
+    )
+
+    $reporter = Get-AlloyedConsoleReporter
+    $reporter.WriteMessage(
+        [Alloyed.DevOps.Multitool.Host.PowerShell.Contracts.ConsoleMessageLevel]::$Level,
+        $Message)
 }
 
 function Invoke-AlloyedCommandRuntime {
@@ -42,7 +55,7 @@ function Invoke-AlloyedCommandRuntime {
 
         try {
             if ($policy.Preview) {
-                Write-Host ("[alloyed-runtime] phase=attempt op={0} attempt={1}" -f $Operation, $attempt)
+                Write-AlloyedRuntimePreviewMessage -Level Info -Message ("runtime-preview phase=attempt op={0} attempt={1}" -f $Operation, $attempt)
             }
 
             $output = $null
@@ -66,7 +79,7 @@ function Invoke-AlloyedCommandRuntime {
                 }
             } else {
                 if ($policy.TimeoutSec -gt 0 -and $InputObjects.Count -gt 0 -and $policy.Preview) {
-                    Write-Host ("[alloyed-runtime] phase=timeout-fallback op={0} reason=input-pipeline" -f $Operation)
+                    Write-AlloyedRuntimePreviewMessage -Level Warning -Message ("runtime-preview phase=timeout-fallback op={0} reason=input-pipeline" -f $Operation)
                 }
 
                 $output = if ($InputObjects.Count -gt 0) {

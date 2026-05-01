@@ -11,6 +11,7 @@
     <ProjectReference Include="..\Alloyed.DevOps.Multitool.Core.Ast\Alloyed.DevOps.Multitool.Core.Ast.csproj" />
     <ProjectReference Include="..\Alloyed.DevOps.Multitool.Core.Catalog\Alloyed.DevOps.Multitool.Core.Catalog.csproj" />
     <ProjectReference Include="..\Alloyed.DevOps.Multitool.Core.Builders\Alloyed.DevOps.Multitool.Core.Builders.csproj" />
+    <ProjectReference Include="..\Alloyed.DevOps.Multitool.Core.Decoration\Alloyed.DevOps.Multitool.Core.Decoration.csproj" />
   </ItemGroup>
 
   <ItemGroup>

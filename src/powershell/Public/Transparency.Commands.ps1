@@ -102,6 +102,7 @@ function Get-AlloyedTransparencyModeStatus {
     param()
 
     [pscustomobject]@{
+        PSTypeName = 'Alloyed.TransparencyModeStatus'
         Enabled = Resolve-AlloyedTransparencyEnabled
         Override = if ($null -eq $script:TransparencyModeOverride) { '<config>' } else { [bool]$script:TransparencyModeOverride }
         SessionModeEnabled = [bool]$script:SessionModeEnabled

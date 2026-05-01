@@ -52,6 +52,8 @@ function Resolve-FailOnSeverity {
 }
 
 function Resolve-AlloyedTransparencyEnabled {
+    Initialize-AlloyedHostAssembly
+
     if ($null -ne $script:TransparencyModeOverride) {
         return [bool]$script:TransparencyModeOverride
     }
@@ -61,6 +63,8 @@ function Resolve-AlloyedTransparencyEnabled {
 }
 
 function Resolve-AlloyedConsoleOutputMode {
+    Initialize-AlloyedHostAssembly
+
     if ($null -ne $script:ConsoleOutputModeOverride) {
         return $script:ConsoleOutputModeOverride
     }

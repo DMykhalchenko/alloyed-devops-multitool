@@ -84,4 +84,70 @@ public sealed class PlainTextConsoleReporter : IConsoleReporter
             writer.WriteLine($"  {row.Key.PadRight(maxKeyLength)} : {row.Value}");
         }
     }
+
+    /// <summary>
+    /// Writes diagnostics as plain text lines with severity, code, and optional source/location.
+    /// </summary>
+    /// <inheritdoc/>
+    public void WriteDiagnostics(string? title, IReadOnlyList<ConsoleDiagnosticEntry> entries)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            writer.WriteLine($"{title}:");
+        }
+
+        foreach (var entry in entries)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(entry.Code);
+            ArgumentException.ThrowIfNullOrWhiteSpace(entry.Message);
+
+            var prefix = entry.Level switch
+            {
+                ConsoleMessageLevel.Info => "[INFO]",
+                ConsoleMessageLevel.Warning => "[WARN]",
+                ConsoleMessageLevel.Error => "[ERROR]",
+                _ => "[INFO]",
+            };
+
+            var context = string.Empty;
+            if (!string.IsNullOrWhiteSpace(entry.Source) || !string.IsNullOrWhiteSpace(entry.Location))
+            {
+                context = $" ({entry.Source}{(string.IsNullOrWhiteSpace(entry.Source) || string.IsNullOrWhiteSpace(entry.Location) ? string.Empty : " @ ")}{entry.Location})";
+            }
+
+            writer.WriteLine($"  {prefix} [{entry.Code}] {entry.Message}{context}");
+        }
+    }
+
+    /// <summary>
+    /// Writes one structured activity/event as a readable plain-text line.
+    /// </summary>
+    /// <inheritdoc/>
+    public void WriteActivity(ConsoleActivityEntry entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        ArgumentException.ThrowIfNullOrWhiteSpace(entry.Category);
+        ArgumentException.ThrowIfNullOrWhiteSpace(entry.Stage);
+        ArgumentException.ThrowIfNullOrWhiteSpace(entry.Operation);
+        ArgumentException.ThrowIfNullOrWhiteSpace(entry.Message);
+
+        var prefix = entry.Level switch
+        {
+            ConsoleMessageLevel.Info => "[INFO]",
+            ConsoleMessageLevel.Warning => "[WARN]",
+            ConsoleMessageLevel.Error => "[ERROR]",
+            _ => "[INFO]",
+        };
+
+        var correlationId = string.IsNullOrWhiteSpace(entry.CorrelationId) ? "-" : entry.CorrelationId;
+        writer.WriteLine(
+            $"{prefix} {entry.Category} {entry.Stage} op={entry.Operation} corr={correlationId} elapsedMs={entry.ElapsedMilliseconds} msg={entry.Message}");
+    }
 }

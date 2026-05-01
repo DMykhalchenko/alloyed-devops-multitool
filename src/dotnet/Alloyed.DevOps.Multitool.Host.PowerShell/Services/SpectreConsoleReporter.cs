@@ -98,6 +98,90 @@ public sealed class SpectreConsoleReporter : IConsoleReporter
     }
 
     /// <summary>
+    /// Writes diagnostics as a Spectre.Console table with severity-aware styling.
+    /// </summary>
+    /// <inheritdoc/>
+    public void WriteDiagnostics(string? title, IReadOnlyList<ConsoleDiagnosticEntry> entries)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            console.MarkupLine($"[bold]{Escape(title)}[/]");
+        }
+
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .AddColumn("[grey]Level[/]")
+            .AddColumn("[grey]Code[/]")
+            .AddColumn("[grey]Message[/]")
+            .AddColumn("[grey]Source[/]")
+            .AddColumn("[grey]Location[/]");
+
+        foreach (var entry in entries)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(entry.Code);
+            ArgumentException.ThrowIfNullOrWhiteSpace(entry.Message);
+
+            var style = entry.Level switch
+            {
+                ConsoleMessageLevel.Info => "white",
+                ConsoleMessageLevel.Warning => "yellow",
+                ConsoleMessageLevel.Error => "red",
+                _ => "white",
+            };
+
+            table.AddRow(
+                $"[{style}]{Escape(entry.Level.ToString())}[/]",
+                Escape(entry.Code),
+                Escape(entry.Message),
+                Escape(entry.Source ?? string.Empty),
+                Escape(entry.Location ?? string.Empty));
+        }
+
+        console.Write(table);
+    }
+
+    /// <summary>
+    /// Writes one structured activity/event line with stage-aware styling for rich terminals.
+    /// </summary>
+    /// <inheritdoc/>
+    public void WriteActivity(ConsoleActivityEntry entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        ArgumentException.ThrowIfNullOrWhiteSpace(entry.Category);
+        ArgumentException.ThrowIfNullOrWhiteSpace(entry.Stage);
+        ArgumentException.ThrowIfNullOrWhiteSpace(entry.Operation);
+        ArgumentException.ThrowIfNullOrWhiteSpace(entry.Message);
+
+        var levelStyle = entry.Level switch
+        {
+            ConsoleMessageLevel.Info => "cyan",
+            ConsoleMessageLevel.Warning => "yellow",
+            ConsoleMessageLevel.Error => "red",
+            _ => "white",
+        };
+
+        var stageStyle = entry.Stage.Equals("Error", StringComparison.OrdinalIgnoreCase)
+            ? "red"
+            : entry.Stage.Equals("Exit", StringComparison.OrdinalIgnoreCase)
+                ? "green"
+                : "blue";
+
+        var correlationId = string.IsNullOrWhiteSpace(entry.CorrelationId) ? "-" : entry.CorrelationId;
+        console.MarkupLine(
+            $"[{levelStyle}][[{Escape(entry.Category)}]][/] " +
+            $"[{stageStyle}]{Escape(entry.Stage)}[/] " +
+            $"[grey]op={Escape(entry.Operation)} corr={Escape(correlationId)} elapsedMs={entry.ElapsedMilliseconds}[/] " +
+            $"[white]{Escape(entry.Message)}[/]");
+    }
+
+    /// <summary>
     /// Escapes Spectre.Console markup characters in <paramref name="value"/> so that they are
     /// rendered as literal text rather than interpreted as markup.
     /// </summary>

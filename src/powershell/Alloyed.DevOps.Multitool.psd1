@@ -32,4 +32,7 @@
     CmdletsToExport = @()
     VariablesToExport = @()
     AliasesToExport = @()
+    FormatsToProcess = @(
+        'Alloyed.DevOps.Multitool.Format.ps1xml'
+    )
 }

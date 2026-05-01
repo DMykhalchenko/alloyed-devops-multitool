@@ -68,39 +68,14 @@ function Initialize-AlloyedRuntimeConfig {
 
     if ($useSpectre) {
         try {
-            $outputPrompt = [Spectre.Console.SelectionPrompt[string]]::new()
-            $outputPrompt.Title = "Select console output mode:"
-            $null = $outputPrompt.AddChoice('Plain')
-            $null = $outputPrompt.AddChoice('Rich')
-            $outputMode = [Spectre.Console.AnsiConsole]::Prompt[string]($outputPrompt)
-
-            $transparencyPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable transparency by default?")
-            $enableTransparency = [Spectre.Console.AnsiConsole]::Prompt[bool]($transparencyPrompt)
-
-            $sessionPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable session mode by default?")
-            $enableSession = [Spectre.Console.AnsiConsole]::Prompt[bool]($sessionPrompt)
-
-            $retryPrompt = [Spectre.Console.SelectionPrompt[string]]::new()
-            $retryPrompt.Title = "Select runtime retry policy:"
-            $null = $retryPrompt.AddChoice('0')
-            $null = $retryPrompt.AddChoice('1')
-            $null = $retryPrompt.AddChoice('2')
-            $null = $retryPrompt.AddChoice('3')
-            $maxRetriesRaw = [Spectre.Console.AnsiConsole]::Prompt[string]($retryPrompt)
-            $maxRetries = [int]$maxRetriesRaw
-
-            $backoffPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable exponential backoff?")
-            $enableBackoff = [Spectre.Console.AnsiConsole]::Prompt[bool]($backoffPrompt)
-
-            $previewPrompt = [Spectre.Console.ConfirmationPrompt]::new("Enable runtime preview logs?")
-            $enablePreview = [Spectre.Console.AnsiConsole]::Prompt[bool]($previewPrompt)
-
-            $profilePrompt = [Spectre.Console.SelectionPrompt[string]]::new()
-            $profilePrompt.Title = "Select transparency output profile:"
-            $null = $profilePrompt.AddChoice('standard')
-            $null = $profilePrompt.AddChoice('minimal')
-            $null = $profilePrompt.AddChoice('debug')
-            $transparencyProfile = [Spectre.Console.AnsiConsole]::Prompt[string]($profilePrompt)
+            $selection = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.RuntimeConfigurationPromptService]::PromptDefaults()
+            $outputMode = [string]$selection.OutputMode
+            $enableTransparency = [bool]$selection.EnableTransparency
+            $enableSession = [bool]$selection.EnableSession
+            $maxRetries = [int]$selection.MaxRetries
+            $enableBackoff = [bool]$selection.EnableBackoff
+            $enablePreview = [bool]$selection.EnablePreview
+            $transparencyProfile = [string]$selection.TransparencyProfile
         } catch {
             $useSpectre = $false
             Write-Verbose "Spectre prompts failed, using plain prompts. $($_.Exception.Message)"
@@ -166,37 +141,21 @@ function Initialize-AlloyedRuntimeConfig {
         }
     }
 
-    if ($useSpectre) {
-        try {
-            $table = [Spectre.Console.Table]::new()
-            $null = $table.AddColumn('Setting')
-            $null = $table.AddColumn('Value')
-            $null = $table.AddRow('ConfigPath', $configPath)
-            $null = $table.AddRow('OutputMode (process)', $outputMode)
-            $null = $table.AddRow('EnableTransparency', [string]$enableTransparency)
-            $null = $table.AddRow('TransparencyProfile', [string]$transparencyProfile)
-            $null = $table.AddRow('SessionEnabled', [string]$enableSession)
-            $null = $table.AddRow('RuntimeMaxRetries (process)', [string]$maxRetries)
-            $null = $table.AddRow('RuntimeExponentialBackoff (process)', [string]$enableBackoff)
-            $null = $table.AddRow('RuntimePreview (process)', [string]$enablePreview)
-            [Spectre.Console.AnsiConsole]::Write($table)
-        } catch {
-            $useSpectre = $false
-        }
-    }
-
-    if (-not $useSpectre) {
-        Write-Host "ConfigPath                : $configPath"
-        Write-Host "OutputMode                : $outputMode"
-        Write-Host "EnableTransparency        : $enableTransparency"
-        Write-Host "TransparencyProfile       : $transparencyProfile"
-        Write-Host "SessionEnabled            : $enableSession"
-        Write-Host "RuntimeMaxRetries         : $maxRetries"
-        Write-Host "RuntimeExponentialBackoff : $enableBackoff"
-        Write-Host "RuntimePreview            : $enablePreview"
-    }
+    $reporter = Get-AlloyedConsoleReporter
+    [Alloyed.DevOps.Multitool.Host.PowerShell.Services.RuntimeConfigurationConsolePresenter]::WriteInitializationSummary(
+        $reporter,
+        $configPath,
+        $outputMode,
+        [bool]$enableTransparency,
+        [string]$transparencyProfile,
+        [bool]$enableSession,
+        [int]$maxRetries,
+        [bool]$enableBackoff,
+        [bool]$enablePreview,
+        [bool]$ApplyToCurrentSession)
 
     [pscustomobject]@{
+        PSTypeName = 'Alloyed.RuntimeConfigInitializationResult'
         ConfigPath = $configPath
         OutputMode = $outputMode
         EnableTransparency = $enableTransparency
@@ -205,6 +164,7 @@ function Initialize-AlloyedRuntimeConfig {
         RuntimeMaxRetries = $maxRetries
         RuntimeExponentialBackoff = $enableBackoff
         RuntimePreview = $enablePreview
+        ApplyToCurrentSession = $ApplyToCurrentSession
     }
 }
 
@@ -216,8 +176,24 @@ function Test-AlloyedRuntimeConfig {
 
     $effective = Get-AlloyedRuntimeConfiguration -BasePath $BasePath
     $policy = Get-AlloyedRuntimeExecutionPolicy
+    $reporter = Get-AlloyedConsoleReporter
+
+    [Alloyed.DevOps.Multitool.Host.PowerShell.Services.RuntimeConfigurationConsolePresenter]::WriteValidationSummary(
+        $reporter,
+        $BasePath,
+        (Get-AlloyedRuntimeConfigFilePath -BasePath $BasePath),
+        [string]$effective.Runtime.DefaultOutputPath,
+        [bool]$effective.Session.Enabled,
+        [bool]$effective.Decoration.EnableTransparency,
+        (Resolve-AlloyedConsoleOutputMode).ToString(),
+        [int]$policy.MaxRetries,
+        [int]$policy.RetryDelaySec,
+        [bool]$policy.ExponentialBackoff,
+        [bool]$policy.Preview,
+        [int]$policy.TimeoutSec)
 
     [pscustomobject]@{
+        PSTypeName = 'Alloyed.RuntimeConfigValidationResult'
         BasePath = $BasePath
         ConfigPath = Get-AlloyedRuntimeConfigFilePath -BasePath $BasePath
         RuntimeDefaultOutputPath = $effective.Runtime.DefaultOutputPath
@@ -228,6 +204,7 @@ function Test-AlloyedRuntimeConfig {
         RuntimeRetryDelaySec = $policy.RetryDelaySec
         RuntimeExponentialBackoff = $policy.ExponentialBackoff
         RuntimePreview = $policy.Preview
+        RuntimeTimeoutSec = $policy.TimeoutSec
     }
 }
 

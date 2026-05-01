@@ -51,6 +51,7 @@ public static class PipelineResultConsolePresenter
             reporter.WriteMessage(ConsoleMessageLevel.Error, result.ErrorMessage);
         }
 
+        var diagnostics = new List<ConsoleDiagnosticEntry>();
         foreach (var diagnostic in result.Diagnostics)
         {
             var level = diagnostic.Severity.ToString() switch
@@ -60,7 +61,33 @@ public static class PipelineResultConsolePresenter
                 _ => ConsoleMessageLevel.Info,
             };
 
-            reporter.WriteMessage(level, $"[{diagnostic.Code}] {diagnostic.Message}");
+            var location = diagnostic.Line > 0
+                ? diagnostic.Column > 0
+                    ? $"Line {diagnostic.Line}, Col {diagnostic.Column}"
+                    : $"Line {diagnostic.Line}"
+                : string.Empty;
+
+            diagnostics.Add(
+                new ConsoleDiagnosticEntry(
+                    level,
+                    diagnostic.Code,
+                    diagnostic.Message,
+                    diagnostic.Source,
+                    location));
+        }
+
+        reporter.WriteDiagnostics("Diagnostics", diagnostics);
+        if (diagnostics.Count == 0 && result.MissingCommands.Count > 0)
+        {
+            var missingCommandEntries = result.MissingCommands
+                .Select(command => new ConsoleDiagnosticEntry(
+                    ConsoleMessageLevel.Warning,
+                    "CATALOG-MISS",
+                    $"No wrapper mapping found for '{command}'.",
+                    "catalog"))
+                .ToList();
+
+            reporter.WriteDiagnostics("Missing command mappings", missingCommandEntries);
         }
     }
 }

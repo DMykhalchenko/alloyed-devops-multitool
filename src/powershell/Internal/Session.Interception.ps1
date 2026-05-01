@@ -226,6 +226,7 @@ function Get-AlloyedSessionModeStatus {
     param()
 
     [pscustomobject]@{
+        PSTypeName = 'Alloyed.SessionModeStatus'
         Enabled = $script:SessionModeEnabled
         ActiveAliasCount = @($script:SessionModeAliases).Count
         ActiveAliases = @($script:SessionModeAliases)

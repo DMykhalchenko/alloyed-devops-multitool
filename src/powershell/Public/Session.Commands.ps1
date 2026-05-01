@@ -83,18 +83,13 @@ function Start-AlloyedSession {
         -OutputMode $effectiveOutputMode `
         -QuietTransparency:$QuietTransparency
 
-    Write-Host "Alloyed session is ready."
-    Write-Host ("  Transparency: {0}" -f $status.Enabled)
-    Write-Host ("  SessionMode : {0}" -f $status.SessionModeEnabled)
-    Write-Host ("  Profile     : {0}" -f $status.Profile)
-    Write-Host ("  OutputMode  : {0}" -f $status.OutputMode)
-    Write-Host "Next:"
-    Write-Host "  1) Run your script"
-    Write-Host "     ./scripts/automation.ps1"
-    Write-Host "  2) Check status"
-    Write-Host "     Get-AlloyedTransparencyModeStatus"
-    Write-Host "  3) Stop interception (if needed)"
-    Write-Host "     Disable-AlloyedSessionMode; Disable-AlloyedTransparencyMode"
+    $reporter = Get-AlloyedConsoleReporter
+    [Alloyed.DevOps.Multitool.Host.PowerShell.Services.SessionConsolePresenter]::WriteSessionReady(
+        $reporter,
+        [bool]$status.Enabled,
+        [bool]$status.SessionModeEnabled,
+        [string]$status.Profile,
+        [string]$status.OutputMode)
 
     return $status
 }
@@ -116,7 +111,8 @@ function Stop-AlloyedSession {
 
     Set-AlloyedSessionState -EnableTransparency:$false -EnableSession:$false | Out-Null
 
-    Write-Host "Alloyed session stopped."
+    $reporter = Get-AlloyedConsoleReporter
+    [Alloyed.DevOps.Multitool.Host.PowerShell.Services.SessionConsolePresenter]::WriteSessionStopped($reporter)
     return Get-AlloyedTransparencyModeStatus
 }
 
@@ -237,6 +233,7 @@ function Get-AlloyedSessionState {
     $session = Get-AlloyedSessionModeStatus
 
     [pscustomobject]@{
+        PSTypeName = 'Alloyed.SessionState'
         RuntimeConfigPath = Get-AlloyedRuntimeConfigFilePath -BasePath $BasePath
         RuntimeSessionEnabled = [bool]$runtime.Session.Enabled
         RuntimeTransparencyEnabled = [bool]$runtime.Decoration.EnableTransparency
