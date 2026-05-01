@@ -199,6 +199,7 @@
           <ListEntry>
             <ListItems>
               <ListItem><Label>ConfigPath</Label><PropertyName>ConfigPath</PropertyName></ListItem>
+              <ListItem><Label>Persisted</Label><PropertyName>Persisted</PropertyName></ListItem>
               <ListItem><Label>OutputMode</Label><PropertyName>OutputMode</PropertyName></ListItem>
               <ListItem><Label>EnableTransparency</Label><PropertyName>EnableTransparency</PropertyName></ListItem>
               <ListItem><Label>TransparencyProfile</Label><PropertyName>TransparencyProfile</PropertyName></ListItem>

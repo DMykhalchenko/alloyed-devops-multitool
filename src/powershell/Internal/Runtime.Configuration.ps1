@@ -54,6 +54,13 @@ function Initialize-AlloyedRuntimeConfig {
     )
 
     $useSpectre = $true
+    $applyToCurrentSessionSpecified = $PSBoundParameters.ContainsKey('ApplyToCurrentSession')
+    $applyToCurrentSession = if ($applyToCurrentSessionSpecified) {
+        [bool]$ApplyToCurrentSession
+    } else {
+        $true
+    }
+
     try {
         Initialize-AlloyedInternalSpectreRuntime
     } catch {
@@ -76,6 +83,9 @@ function Initialize-AlloyedRuntimeConfig {
             $enableBackoff = [bool]$selection.EnableBackoff
             $enablePreview = [bool]$selection.EnablePreview
             $transparencyProfile = [string]$selection.TransparencyProfile
+            if (-not $applyToCurrentSessionSpecified) {
+                $applyToCurrentSession = [bool]$selection.ApplyToCurrentSession
+            }
         } catch {
             $useSpectre = $false
             Write-Verbose "Spectre prompts failed, using plain prompts. $($_.Exception.Message)"
@@ -101,6 +111,10 @@ function Initialize-AlloyedRuntimeConfig {
             '^(?i)minimal$' { $transparencyProfile = 'minimal'; break }
             '^(?i)debug$' { $transparencyProfile = 'debug'; break }
             default { $transparencyProfile = 'standard'; break }
+        }
+
+        if (-not $applyToCurrentSessionSpecified) {
+            $applyToCurrentSession = ((Read-Host "Apply these settings to the current session now? [y/n] (y)") -notmatch '^(?i)n')
         }
     }
 
@@ -129,19 +143,26 @@ function Initialize-AlloyedRuntimeConfig {
         }
     }
 
+    $didWrite = $false
     if ($PSCmdlet.ShouldProcess($configPath, 'Write runtime config file')) {
         Write-AlloyedRuntimeConfigFile -Path $configPath -Config $runtimeConfig
+        $didWrite = $true
         [System.Environment]::SetEnvironmentVariable('ALLOYED_CONSOLE_OUTPUT_MODE', $outputMode, 'Process')
         [System.Environment]::SetEnvironmentVariable('ALLOYED_RUNTIME_MAX_RETRIES', [string]$maxRetries, 'Process')
         [System.Environment]::SetEnvironmentVariable('ALLOYED_RUNTIME_EXPONENTIAL_BACKOFF', [string]$enableBackoff, 'Process')
         [System.Environment]::SetEnvironmentVariable('ALLOYED_RUNTIME_PREVIEW', [string]$enablePreview, 'Process')
 
-        if ($ApplyToCurrentSession) {
+        if ($applyToCurrentSession) {
             $null = Set-AlloyedRuntimeConfig -BasePath $BasePath
         }
     }
 
     $reporter = Get-AlloyedConsoleReporter
+    if (-not $didWrite) {
+        $reporter.WriteMessage(
+            [Alloyed.DevOps.Multitool.Host.PowerShell.Contracts.ConsoleMessageLevel]::Warning,
+            "Runtime configuration was not written.")
+    }
     [Alloyed.DevOps.Multitool.Host.PowerShell.Services.RuntimeConfigurationConsolePresenter]::WriteInitializationSummary(
         $reporter,
         $configPath,
@@ -152,11 +173,12 @@ function Initialize-AlloyedRuntimeConfig {
         [int]$maxRetries,
         [bool]$enableBackoff,
         [bool]$enablePreview,
-        [bool]$ApplyToCurrentSession)
+        [bool]$applyToCurrentSession)
 
     [pscustomobject]@{
         PSTypeName = 'Alloyed.RuntimeConfigInitializationResult'
         ConfigPath = $configPath
+        Persisted = $didWrite
         OutputMode = $outputMode
         EnableTransparency = $enableTransparency
         TransparencyProfile = $transparencyProfile
@@ -164,7 +186,7 @@ function Initialize-AlloyedRuntimeConfig {
         RuntimeMaxRetries = $maxRetries
         RuntimeExponentialBackoff = $enableBackoff
         RuntimePreview = $enablePreview
-        ApplyToCurrentSession = $ApplyToCurrentSession
+        ApplyToCurrentSession = $applyToCurrentSession
     }
 }
 

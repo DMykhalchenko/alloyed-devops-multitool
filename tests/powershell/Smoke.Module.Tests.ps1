@@ -5,12 +5,14 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$moduleManifest = Join-Path $repoRoot 'src/powershell/Alloyed.DevOps.Multitool.psd1'
 $sampleScript = Join-Path $repoRoot 'samples/sample-transform-input.ps1'
 $artifactsRoot = Join-Path $repoRoot 'tests/powershell/artifacts'
-$dotnetBuildRoot = Join-Path $artifactsRoot 'dotnet-build'
-$dotnetBuildBaseOutput = $dotnetBuildRoot + [System.IO.Path]::DirectorySeparatorChar
-$moduleLibPath = Join-Path $repoRoot 'src/powershell/lib'
+$dotnetArtifactsPath = Join-Path $artifactsRoot 'dotnet-artifacts'
+$isolatedModuleRoot = Join-Path $artifactsRoot 'module-under-test'
+$moduleManifest = Join-Path $isolatedModuleRoot 'Alloyed.DevOps.Multitool.psd1'
+$moduleLibPath = Join-Path $isolatedModuleRoot 'lib'
+$interactiveInitBasePath = Join-Path $artifactsRoot 'interactive-init'
+$interactiveWhatIfBasePath = Join-Path $artifactsRoot 'interactive-init-whatif'
 $sessionConfigBasePath = Join-Path $artifactsRoot 'session-config'
 $sessionConfigPath = Join-Path $sessionConfigBasePath 'config/appsettings.json'
 $generatedModuleName = 'AlloyedSmokeModule'
@@ -22,6 +24,13 @@ if (-not (Test-Path $sampleScript)) {
     throw "Sample script not found: $sampleScript"
 }
 
+if (Test-Path -LiteralPath $isolatedModuleRoot) {
+    Remove-Item -LiteralPath $isolatedModuleRoot -Recurse -Force
+}
+
+New-Item -ItemType Directory -Path $isolatedModuleRoot -Force | Out-Null
+Copy-Item -Path (Join-Path $repoRoot 'src/powershell/*') -Destination $isolatedModuleRoot -Recurse -Force
+
 # Build host assembly required by wrapper module.
 $env:DOTNET_CLI_HOME = Join-Path $repoRoot '.dotnet-cli'
 $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = '1'
@@ -32,17 +41,27 @@ if ($LASTEXITCODE -ne 0) {
     throw "dotnet restore failed with exit code $LASTEXITCODE."
 }
 
-dotnet build $hostProject -c Debug --no-restore -p:BaseOutputPath=$dotnetBuildBaseOutput | Out-Null
+dotnet restore $hostProject --verbosity minimal --artifacts-path $dotnetArtifactsPath | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    throw "dotnet restore failed for host project with exit code $LASTEXITCODE."
+}
+
+dotnet build $hostProject -c Debug --no-restore --artifacts-path $dotnetArtifactsPath | Out-Null
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet build failed for host project with exit code $LASTEXITCODE."
 }
 
-dotnet build $decorationProject -c Debug --no-restore -p:BaseOutputPath=$dotnetBuildBaseOutput | Out-Null
+dotnet restore $decorationProject --verbosity minimal --artifacts-path $dotnetArtifactsPath | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    throw "dotnet restore failed for decoration project with exit code $LASTEXITCODE."
+}
+
+dotnet build $decorationProject -c Debug --no-restore --artifacts-path $dotnetArtifactsPath | Out-Null
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet build failed for decoration project with exit code $LASTEXITCODE."
 }
 
-$packagedBuildOutput = Join-Path $dotnetBuildRoot 'Debug/net8.0'
+$packagedBuildOutput = Join-Path $dotnetArtifactsPath 'bin/Alloyed.DevOps.Multitool.Host.PowerShell/debug'
 if (-not (Test-Path -LiteralPath $packagedBuildOutput)) {
     throw "Expected build output directory not found: $packagedBuildOutput"
 }
@@ -267,6 +286,79 @@ try {
 
 if ($runtimePreviewOutput -notmatch '\[INFO\].*runtime-preview phase=attempt op=PreviewCheck attempt=1') {
     throw 'Invoke-AlloyedCommandRuntime preview output did not flow through the console reporter as expected.'
+}
+
+$interactiveInitCommand = @"
+`$ErrorActionPreference = 'Stop'
+Import-Module '$moduleManifest' -Force
+& (Get-Module Alloyed.DevOps.Multitool) {
+    function script:Initialize-AlloyedInternalSpectreRuntime { throw 'force plain prompt path' }
+}
+`$script:answers = [System.Collections.Generic.Queue[string]]::new()
+@('Plain','y','n','1','y','n','standard','n') | ForEach-Object { [void]`$script:answers.Enqueue(`$_) }
+`$script:prompts = [System.Collections.Generic.List[string]]::new()
+function global:Read-Host {
+    param([string]`$Prompt)
+    [void]`$script:prompts.Add(`$Prompt)
+    return `$script:answers.Dequeue()
+}
+`$result = Initialize-AlloyedRuntimeConfig -BasePath '$interactiveInitBasePath' -Force
+`$payload = [pscustomobject]@{
+    Result = `$result
+    PromptCount = `$script:prompts.Count
+    ConfigExists = Test-Path -LiteralPath (Join-Path '$interactiveInitBasePath' 'config/appsettings.json')
+} | ConvertTo-Json -Depth 6 -Compress
+Write-Output "__ALLOYED_JSON__`$payload"
+"@
+$interactiveInitOutput = & pwsh -NoProfile -Command $interactiveInitCommand
+$interactiveInitJson = $interactiveInitOutput | Where-Object { $_ -like '__ALLOYED_JSON__*' } | Select-Object -Last 1
+if (-not $interactiveInitJson) {
+    throw 'Initialize-AlloyedRuntimeConfig interactive smoke did not emit result marker.'
+}
+$interactiveInitResult = ($interactiveInitJson -replace '^__ALLOYED_JSON__', '') | Microsoft.PowerShell.Utility\ConvertFrom-Json
+if (-not $interactiveInitResult.ConfigExists) {
+    throw 'Initialize-AlloyedRuntimeConfig did not create config file in interactive plain-prompt path.'
+}
+if (-not $interactiveInitResult.Result.Persisted) {
+    throw 'Initialize-AlloyedRuntimeConfig interactive result should report Persisted=true after writing config.'
+}
+if ($interactiveInitResult.Result.ApplyToCurrentSession -ne $false) {
+    throw 'Initialize-AlloyedRuntimeConfig did not honor the interactive apply-to-current-session prompt response.'
+}
+if ([int]$interactiveInitResult.PromptCount -ne 8) {
+    throw "Initialize-AlloyedRuntimeConfig prompt count mismatch. Expected 8, actual '$($interactiveInitResult.PromptCount)'."
+}
+
+$interactiveWhatIfCommand = @"
+`$ErrorActionPreference = 'Stop'
+Import-Module '$moduleManifest' -Force
+& (Get-Module Alloyed.DevOps.Multitool) {
+    function script:Initialize-AlloyedInternalSpectreRuntime { throw 'force plain prompt path' }
+}
+`$script:answers = [System.Collections.Generic.Queue[string]]::new()
+@('Plain','y','n','1','y','n','standard','n') | ForEach-Object { [void]`$script:answers.Enqueue(`$_) }
+function global:Read-Host {
+    param([string]`$Prompt)
+    return `$script:answers.Dequeue()
+}
+`$result = Initialize-AlloyedRuntimeConfig -BasePath '$interactiveWhatIfBasePath' -Force -WhatIf
+`$payload = [pscustomobject]@{
+    Result = `$result
+    ConfigExists = Test-Path -LiteralPath (Join-Path '$interactiveWhatIfBasePath' 'config/appsettings.json')
+} | ConvertTo-Json -Depth 6 -Compress
+Write-Output "__ALLOYED_JSON__`$payload"
+"@
+$interactiveWhatIfOutput = & pwsh -NoProfile -Command $interactiveWhatIfCommand
+$interactiveWhatIfJson = $interactiveWhatIfOutput | Where-Object { $_ -like '__ALLOYED_JSON__*' } | Select-Object -Last 1
+if (-not $interactiveWhatIfJson) {
+    throw 'Initialize-AlloyedRuntimeConfig -WhatIf smoke did not emit result marker.'
+}
+$interactiveWhatIfResult = ($interactiveWhatIfJson -replace '^__ALLOYED_JSON__', '') | Microsoft.PowerShell.Utility\ConvertFrom-Json
+if ($interactiveWhatIfResult.ConfigExists) {
+    throw 'Initialize-AlloyedRuntimeConfig -WhatIf should not create config file.'
+}
+if ($interactiveWhatIfResult.Result.Persisted -ne $false) {
+    throw 'Initialize-AlloyedRuntimeConfig -WhatIf should report Persisted=false.'
 }
 
 Write-Host 'Smoke test passed: end-to-end transform and module generation are working.' -ForegroundColor Green

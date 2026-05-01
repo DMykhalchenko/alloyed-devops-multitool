@@ -38,7 +38,7 @@ public sealed class ReporterDecorationSink : IDecorationSink
                     entry.Operation,
                     entry.CorrelationId,
                     entry.ElapsedMilliseconds,
-                    entry.Message ?? "-"));
+                    NormalizeMessage(entry)));
         }
         catch
         {
@@ -52,4 +52,30 @@ public sealed class ReporterDecorationSink : IDecorationSink
             DecorationStage.Error => ConsoleMessageLevel.Error,
             _ => ConsoleMessageLevel.Info,
         };
+
+    private static string NormalizeMessage(DecorationEvent entry)
+    {
+        var message = string.IsNullOrWhiteSpace(entry.Message) ? "-" : entry.Message.Trim();
+        if (!entry.Decorator.Equals("TransparencyDecorator", StringComparison.Ordinal))
+        {
+            return message;
+        }
+
+        var bracketPrefix = $"[{entry.Stage.ToString().ToLowerInvariant()}] {entry.Operation}";
+        if (message.StartsWith(bracketPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var remainder = message[bracketPrefix.Length..].TrimStart();
+            return string.IsNullOrWhiteSpace(remainder) ? "activity" : remainder;
+        }
+
+        var structuredPrefix =
+            $"phase={entry.Stage.ToString().ToLowerInvariant()} op={entry.Operation} corr={entry.CorrelationId ?? "-"}";
+        if (message.StartsWith(structuredPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var remainder = message[structuredPrefix.Length..].TrimStart();
+            return string.IsNullOrWhiteSpace(remainder) ? "activity" : remainder;
+        }
+
+        return message;
+    }
 }

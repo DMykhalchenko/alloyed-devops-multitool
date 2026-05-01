@@ -41,6 +41,9 @@ public static class RuntimeConfigurationPromptService
             .AddChoices("standard", "minimal", "debug");
         var transparencyProfile = AnsiConsole.Prompt(profilePrompt);
 
+        var applyToCurrentSession = AnsiConsole.Prompt(
+            new ConfirmationPrompt("Apply these settings to the current session now?"));
+
         return new RuntimeConfigurationInitializationSelection(
             outputMode,
             enableTransparency,
@@ -48,6 +51,7 @@ public static class RuntimeConfigurationPromptService
             maxRetries,
             enableBackoff,
             enablePreview,
-            transparencyProfile);
+            transparencyProfile,
+            applyToCurrentSession);
     }
 }

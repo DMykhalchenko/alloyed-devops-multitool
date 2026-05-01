@@ -114,6 +114,7 @@ Behavior:
 
 - Uses Spectre.Console selection/confirmation prompts, with plain `Read-Host` fallback when Spectre APIs are unavailable.
 - Writes `config/appsettings.json`.
+- Prompts whether the selected settings should also be applied to the current session immediately.
 - Sets process-level runtime environment values for current session:
   - `ALLOYED_CONSOLE_OUTPUT_MODE`
   - `ALLOYED_RUNTIME_MAX_RETRIES`
@@ -131,13 +132,13 @@ Test-AlloyedRuntimeConfig
 To apply saved config to the current session explicitly:
 
 ```powershell
-Apply-AlloyedRuntimeConfig
+Set-AlloyedRuntimeConfig
 ```
 
 Apply and keep output concise:
 
 ```powershell
-Apply-AlloyedRuntimeConfig -QuietTransparency
+Set-AlloyedRuntimeConfig -QuietTransparency
 ```
 
 Runtime timeout notes:

@@ -233,6 +233,8 @@ public class ConsoleReporterIntegrationTests
         output.Should().Contain("Get-ChildItem");
         output.Should().Contain("abc123");
         output.Should().Contain("elapsedMs=12");
+        output.Should().Contain("error");
+        output.Should().Contain("ex=In");
     }
 
     [Fact]
@@ -375,7 +377,26 @@ public class ConsoleReporterIntegrationTests
             Message: "[error] Get-ChildItem ex=InvalidOperationException"));
 
         var output = writer.ToString();
-        output.Should().Contain("[INFO] TransparencyDecorator Enter op=Get-ChildItem corr=abc123 elapsedMs=0 msg=[enter] Get-ChildItem");
-        output.Should().Contain("[ERROR] TransparencyDecorator Error op=Get-ChildItem corr=abc123 elapsedMs=12 msg=[error] Get-ChildItem ex=InvalidOperationException");
+        output.Should().Contain("[INFO] TransparencyDecorator Enter op=Get-ChildItem corr=abc123 elapsedMs=0 msg=activity");
+        output.Should().Contain("[ERROR] TransparencyDecorator Error op=Get-ChildItem corr=abc123 elapsedMs=12 msg=ex=InvalidOperationException");
+    }
+
+    [Fact]
+    public void ReporterDecorationSink_Should_TrimStructuredTransparencyMessagePrefix()
+    {
+        var writer = new StringWriter(new StringBuilder());
+        IConsoleReporter reporter = new PlainTextConsoleReporter(writer);
+        var sink = new ReporterDecorationSink(reporter);
+
+        sink.Write(new DecorationEvent(
+            Operation: "Split-Path",
+            Decorator: "TransparencyDecorator",
+            Stage: DecorationStage.Enter,
+            ElapsedMilliseconds: 0,
+            CorrelationId: "corr-1",
+            Message: "phase=enter op=Split-Path corr=corr-1 profile=standard tags.count=5 tags.preview=correlationId=corr-1"));
+
+        var output = writer.ToString();
+        output.Should().Contain("msg=profile=standard tags.count=5 tags.preview=correlationId=corr-1");
     }
 }

@@ -158,27 +158,7 @@ public sealed class SpectreConsoleReporter : IConsoleReporter
         ArgumentException.ThrowIfNullOrWhiteSpace(entry.Stage);
         ArgumentException.ThrowIfNullOrWhiteSpace(entry.Operation);
         ArgumentException.ThrowIfNullOrWhiteSpace(entry.Message);
-
-        var levelStyle = entry.Level switch
-        {
-            ConsoleMessageLevel.Info => "cyan",
-            ConsoleMessageLevel.Warning => "yellow",
-            ConsoleMessageLevel.Error => "red",
-            _ => "white",
-        };
-
-        var stageStyle = entry.Stage.Equals("Error", StringComparison.OrdinalIgnoreCase)
-            ? "red"
-            : entry.Stage.Equals("Exit", StringComparison.OrdinalIgnoreCase)
-                ? "green"
-                : "blue";
-
-        var correlationId = string.IsNullOrWhiteSpace(entry.CorrelationId) ? "-" : entry.CorrelationId;
-        console.MarkupLine(
-            $"[{levelStyle}][[{Escape(entry.Category)}]][/] " +
-            $"[{stageStyle}]{Escape(entry.Stage)}[/] " +
-            $"[grey]op={Escape(entry.Operation)} corr={Escape(correlationId)} elapsedMs={entry.ElapsedMilliseconds}[/] " +
-            $"[white]{Escape(entry.Message)}[/]");
+        console.Write(new ConsoleActivityRenderable(entry));
     }
 
     /// <summary>
