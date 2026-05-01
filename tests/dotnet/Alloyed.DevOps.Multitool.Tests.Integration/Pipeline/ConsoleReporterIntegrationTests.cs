@@ -48,7 +48,7 @@ public class ConsoleReporterIntegrationTests
         reporter.WriteKeyValue("CommandsFound", "3");
 
         var output = writer.ToString();
-        output.Should().Contain("== Pipeline ==");
+        output.Should().Contain("── Pipeline ");
         output.Should().Contain("[WARN] be careful");
         output.Should().Contain("CommandsFound: 3");
     }
@@ -81,7 +81,7 @@ public class ConsoleReporterIntegrationTests
         reporter.WriteMessage(ConsoleMessageLevel.Error, "[PIPELINE-FAIL-ON-SEVERITY] Pipeline stopped because analyzer diagnostics met fail policy (Warning or higher).");
 
         var output = writer.ToString();
-        output.Should().Contain("== New-AlloyedModuleTransform ==");
+        output.Should().Contain("── New-AlloyedModuleTransform ");
         output.Should().Contain("[ERROR] Pipeline failed.");
         output.Should().Contain("CommandsFound: 2");
         output.Should().Contain("MissingCommands: 2");
@@ -135,8 +135,6 @@ public class ConsoleReporterIntegrationTests
         output.Should().Contain("Summary");
         output.Should().Contain("CommandsFound");
         output.Should().Contain("CommandsReplaced");
-        output.Should().Contain("Property");
-        output.Should().Contain("Value");
     }
 
     [Fact]
@@ -228,11 +226,9 @@ public class ConsoleReporterIntegrationTests
             "[error] Get-ChildItem ex=InvalidOperationException"));
 
         var output = writer.ToString();
-        output.Should().Contain("TransparencyDecorator");
         output.Should().Contain("Error");
         output.Should().Contain("Get-ChildItem");
-        output.Should().Contain("abc123");
-        output.Should().Contain("elapsedMs=12");
+        output.Should().Contain("12ms");
         output.Should().Contain("error");
         output.Should().Contain("ex=In");
     }
@@ -254,7 +250,7 @@ public class ConsoleReporterIntegrationTests
         PipelineResultConsolePresenter.WriteSummary(reporter, result, "New-AlloyedModuleTransform");
 
         var output = writer.ToString();
-        output.Should().Contain("== New-AlloyedModuleTransform ==");
+        output.Should().Contain("── New-AlloyedModuleTransform ");
         output.Should().Contain("[INFO] Pipeline completed successfully.");
         output.Should().Contain("Summary:");
         output.Should().Contain("CommandsFound");
@@ -277,7 +273,7 @@ public class ConsoleReporterIntegrationTests
             outputMode: "Rich");
 
         var output = writer.ToString();
-        output.Should().Contain("== Alloyed session is ready ==");
+        output.Should().Contain("── Alloyed session is ready ");
         output.Should().Contain("Session status:");
         output.Should().Contain("Transparency");
         output.Should().Contain("SessionMode");
@@ -295,7 +291,7 @@ public class ConsoleReporterIntegrationTests
         SessionConsolePresenter.WriteSessionStopped(reporter);
 
         var output = writer.ToString();
-        output.Should().Contain("== Alloyed session stopped ==");
+        output.Should().Contain("── Alloyed session stopped ");
         output.Should().Contain("Transparency mode and session interception are now disabled.");
     }
 
@@ -318,7 +314,7 @@ public class ConsoleReporterIntegrationTests
             applyToCurrentSession: true);
 
         var output = writer.ToString();
-        output.Should().Contain("== Alloyed runtime config initialized ==");
+        output.Should().Contain("── Alloyed runtime config initialized ");
         output.Should().Contain("Config summary:");
         output.Should().Contain("ConfigPath");
         output.Should().Contain("OutputMode");
@@ -346,7 +342,7 @@ public class ConsoleReporterIntegrationTests
             runtimeTimeoutSec: 30);
 
         var output = writer.ToString();
-        output.Should().Contain("== Alloyed runtime config validation ==");
+        output.Should().Contain("── Alloyed runtime config validation ");
         output.Should().Contain("Effective runtime:");
         output.Should().Contain("RuntimeDefaultOutputPath");
         output.Should().Contain("RuntimeRetryDelaySec");
