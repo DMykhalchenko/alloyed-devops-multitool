@@ -45,6 +45,11 @@ Copy-Item -LiteralPath $sourceModulePath -Destination (Join-Path $publishRoot "$
 Copy-Item -Path (Join-Path $moduleSourcePath "Public") -Destination (Join-Path $publishRoot "Public") -Recurse -Force
 Copy-Item -Path (Join-Path $moduleSourcePath "Internal") -Destination (Join-Path $publishRoot "Internal") -Recurse -Force
 
+$formatFile = Join-Path $moduleSourcePath "$ModuleName.Format.ps1xml"
+if (Test-Path -LiteralPath $formatFile) {
+    Copy-Item -LiteralPath $formatFile -Destination (Join-Path $publishRoot "$ModuleName.Format.ps1xml") -Force
+}
+
 Write-Host "[2/5] Building .NET host assemblies"
 if (-not $SkipBuild.IsPresent) {
     dotnet restore $solutionPath --verbosity minimal
