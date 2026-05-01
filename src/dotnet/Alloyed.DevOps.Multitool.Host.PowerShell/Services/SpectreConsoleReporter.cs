@@ -24,13 +24,15 @@ public sealed class SpectreConsoleReporter : IConsoleReporter
     }
 
     /// <summary>
-    /// Writes a bold cyan <c>== title ==</c> header via Spectre markup.
+    /// Writes a left-justified cyan <see cref="Rule"/> as a section header.
     /// </summary>
     /// <inheritdoc/>
     public void WriteHeader(string title)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
-        console.MarkupLine($"[bold cyan]== {Escape(title)} ==[/]");
+        console.Write(new Rule($"[bold cyan]{Escape(title)}[/]")
+            .RuleStyle(new Style(Color.Cyan1, decoration: Decoration.Dim))
+            .LeftJustified());
     }
 
     /// <summary>
@@ -71,34 +73,49 @@ public sealed class SpectreConsoleReporter : IConsoleReporter
     }
 
     /// <summary>
-    /// Writes an optional title and renders key/value rows as a Spectre.Console table.
+    /// Renders key/value rows as a borderless two-column table inside a rounded <see cref="Panel"/>
+    /// when a title is present, or as a plain table when no title is given.
     /// </summary>
     /// <inheritdoc/>
     public void WriteKeyValueTable(string? title, IReadOnlyList<ConsoleKeyValueRow> rows)
     {
         ArgumentNullException.ThrowIfNull(rows);
 
-        if (!string.IsNullOrWhiteSpace(title))
+        if (rows.Count == 0)
         {
-            console.MarkupLine($"[bold]{Escape(title)}[/]");
+            return;
         }
 
         var table = new Table()
-            .Border(TableBorder.Rounded)
-            .AddColumn("[grey]Property[/]")
-            .AddColumn("[grey]Value[/]");
+            .Border(TableBorder.None)
+            .HideHeaders()
+            .AddColumn(new TableColumn(string.Empty).NoWrap())
+            .AddColumn(new TableColumn(string.Empty));
 
         foreach (var row in rows)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(row.Key);
-            table.AddRow(Escape(row.Key), Escape(row.Value ?? string.Empty));
+            table.AddRow(
+                new Markup($"[grey]{Escape(row.Key)}[/]"),
+                new Markup($"[white]{Escape(row.Value)}[/]"));
         }
 
-        console.Write(table);
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            console.Write(new Panel(table)
+                .Header(new PanelHeader($"[grey] {Escape(title)} [/]", Justify.Left))
+                .Border(BoxBorder.Rounded)
+                .BorderColor(Color.Grey));
+        }
+        else
+        {
+            console.Write(table);
+        }
     }
 
     /// <summary>
-    /// Writes diagnostics as a Spectre.Console table with severity-aware styling.
+    /// Writes diagnostics as a Spectre.Console table with severity-aware styling, wrapped in a
+    /// rounded <see cref="Panel"/> when a title is present.
     /// </summary>
     /// <inheritdoc/>
     public void WriteDiagnostics(string? title, IReadOnlyList<ConsoleDiagnosticEntry> entries)
@@ -110,13 +127,8 @@ public sealed class SpectreConsoleReporter : IConsoleReporter
             return;
         }
 
-        if (!string.IsNullOrWhiteSpace(title))
-        {
-            console.MarkupLine($"[bold]{Escape(title)}[/]");
-        }
-
         var table = new Table()
-            .Border(TableBorder.Rounded)
+            .Border(TableBorder.Simple)
             .AddColumn("[grey]Level[/]")
             .AddColumn("[grey]Code[/]")
             .AddColumn("[grey]Message[/]")
@@ -144,7 +156,17 @@ public sealed class SpectreConsoleReporter : IConsoleReporter
                 Escape(entry.Location ?? string.Empty));
         }
 
-        console.Write(table);
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            console.Write(new Panel(table)
+                .Header(new PanelHeader($"[grey] {Escape(title)} [/]", Justify.Left))
+                .Border(BoxBorder.Rounded)
+                .BorderColor(Color.Grey));
+        }
+        else
+        {
+            console.Write(table);
+        }
     }
 
     /// <summary>

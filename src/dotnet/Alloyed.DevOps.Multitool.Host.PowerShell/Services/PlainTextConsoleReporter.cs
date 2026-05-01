@@ -22,13 +22,15 @@ public sealed class PlainTextConsoleReporter : IConsoleReporter
     }
 
     /// <summary>
-    /// Writes <c>== title ==</c> to the output writer.
+    /// Writes a plain-text rule line: <c>── title ─────</c> to the output writer.
     /// </summary>
     /// <inheritdoc/>
     public void WriteHeader(string title)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
-        writer.WriteLine($"== {title} ==");
+        string label = $"── {title} ";
+        string fill = new('─', Math.Max(0, 80 - label.Length));
+        writer.WriteLine($"{label}{fill}");
     }
 
     /// <summary>

@@ -282,7 +282,11 @@ function Invoke-AlloyedScript {
     $shouldDisableAfterRun = $false
 
     if (-not (Resolve-AlloyedTransparencyEnabled)) {
-        $null = Enable-AlloyedTransparencyMode -SkipSessionMode:$SkipSessionMode -OutputMode $OutputMode
+        $enableArgs = @{ SkipSessionMode = $SkipSessionMode }
+        if (-not [string]::IsNullOrWhiteSpace($OutputMode)) {
+            $enableArgs['OutputMode'] = $OutputMode
+        }
+        $null = Enable-AlloyedTransparencyMode @enableArgs
         $shouldDisableAfterRun = $true
     } elseif (-not $SkipSessionMode.IsPresent -and -not $script:SessionModeEnabled) {
         $null = Enable-AlloyedSessionMode -Force

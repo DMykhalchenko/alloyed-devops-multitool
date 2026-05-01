@@ -19,8 +19,12 @@ function Initialize-AlloyedDecorationPipeline {
 function Get-AlloyedConsoleReporter {
     Initialize-AlloyedHostAssembly
 
-    $isInteractive = -not [System.Console]::IsOutputRedirected
     $mode = Resolve-AlloyedConsoleOutputMode
+    # When the user has explicitly chosen an output mode, honour it regardless of terminal
+    # detection. [System.Console]::IsOutputRedirected is always true inside a PowerShell host
+    # because the host redirects stdout, which would otherwise force Plain even when Rich is
+    # requested.
+    $isInteractive = ($null -ne $script:ConsoleOutputModeOverride) -or (-not [System.Console]::IsOutputRedirected)
     return [Alloyed.DevOps.Multitool.Host.PowerShell.Services.ConsoleReporterFactory]::Create($mode, $isInteractive, $null)
 }
 
@@ -153,7 +157,8 @@ function Invoke-AlloyedDecoratedCommand {
 
     $tags = [System.Collections.Generic.Dictionary[string,string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $tags['operation'] = $Operation
-    $tags['enableTransparency'] = (Resolve-AlloyedTransparencyEnabled).ToString().ToLowerInvariant()
+    $transparencyEnabled = if ($null -ne $script:TransparencyModeOverride) { [bool]$script:TransparencyModeOverride } else { $false }
+    $tags['enableTransparency'] = $transparencyEnabled.ToString().ToLowerInvariant()
     $tags['transparencyVerbose'] = [System.Environment]::GetEnvironmentVariable('ALLOYED_TRANSPARENCY_VERBOSE')
     $tags['transparencyProfile'] = [System.Environment]::GetEnvironmentVariable('ALLOYED_TRANSPARENCY_PROFILE')
 

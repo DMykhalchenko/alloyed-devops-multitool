@@ -71,7 +71,9 @@ function Set-AlloyedCommandProxyFunction {
         if ($isClearHost) {
             & $decoratedInvoker -Operation $operationCopy -Parameters @{} -Action { & $nativeCopy }
         } else {
-            & $decoratedInvoker -Operation $operationCopy -Arguments $args -InputObjects @($input) -Action { & $nativeCopy @args }
+            $capturedInput = @($input)
+            $action = { end { $capturedInput | & $nativeCopy @args } }.GetNewClosure()
+            & $decoratedInvoker -Operation $operationCopy -Arguments $args -InputObjects $capturedInput -Action $action
         }
     }.GetNewClosure()
 

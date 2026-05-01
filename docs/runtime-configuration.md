@@ -37,7 +37,7 @@ $env:ALLOYED_CONSOLE_OUTPUT_MODE = "Rich"   # single underscore — PS-layer onl
 ## Keys reference
 
 | Key | Type | Default | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `Alloyed:Runtime:FailOnSeverity` | `Info\|Warning\|Error` or empty | empty | When set, pipeline fails if diagnostics meet/exceed threshold. |
 | `Alloyed:Runtime:DefaultOutputPath` | string | `out` | Used by `New-AlloyedModuleTransform` when `-OutputPath` is omitted. Can be relative to current directory or absolute. |
 | `Alloyed:Session:Enabled` | bool | `false` | Session mode feature flag (behavior delivered in next wave). |

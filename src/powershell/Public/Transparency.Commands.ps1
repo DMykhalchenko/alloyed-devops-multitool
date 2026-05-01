@@ -42,6 +42,7 @@ function Enable-AlloyedTransparencyMode {
 
     if (-not [string]::IsNullOrWhiteSpace($OutputMode)) {
         $script:ConsoleOutputModeOverride = [Alloyed.DevOps.Multitool.Host.PowerShell.Services.ConsoleOutputMode]::$OutputMode
+        $script:DecorationPipeline = $null
     }
 
     $script:TransparencyModeOverride = $true
