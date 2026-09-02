@@ -1,13 +1,53 @@
 # alloyed-devops-multitool
 
-[![Pipeline](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/pipeline.yml/badge.svg)](https://github.com/Ligare-Method/alloyed-devops-multitool/actions/workflows/pipeline.yml)
-[![Version](https://img.shields.io/github/v/release/Ligare-Method/alloyed-devops-multitool?include_prereleases&label=version&logo=powershell)](https://github.com/Ligare-Method/alloyed-devops-multitool/releases)
+[![Pipeline](https://github.com/DMykhalchenko/alloyed-devops-multitool/actions/workflows/pipeline.yml/badge.svg)](https://github.com/DMykhalchenko/alloyed-devops-multitool/actions/workflows/pipeline.yml)
+[![Version](https://img.shields.io/github/v/release/DMykhalchenko/alloyed-devops-multitool?include_prereleases&label=version&logo=powershell)](https://github.com/DMykhalchenko/alloyed-devops-multitool/releases)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-`alloyed-devops-multitool` is a PowerShell modernization toolkit:
+**Add logging, timing, retries and timeouts to legacy PowerShell automation — without editing the scripts.**
 
-- run existing scripts through decorators without renaming commands,
-- transform scripts into wrapper-based modules,
-- control runtime behavior with explicit configuration.
+Every long-lived infrastructure codebase has scripts nobody wants to touch. They are business
+critical, they mostly work, and when a run fails nothing tells you which step broke or how long it
+took. Rewriting them is expensive and risky; leaving them alone keeps them opaque.
+
+This toolkit takes a third path. It intercepts the commands a script already calls, so the script
+runs **completely unmodified** while every command it invokes is wrapped with structured output, a
+correlation ID, timing, and retry/timeout policy.
+
+```powershell
+Start-AlloyedSession     # interception on
+./deploy.ps1             # your existing script — not one line changed
+Stop-AlloyedSession
+```
+
+That script's own `Get-ChildItem` and `Test-Path` calls now report themselves:
+
+```text
+── Alloyed session is ready ────────────────────────────────────────────────────
+Session status:
+  Transparency : True
+  SessionMode  : True
+  Profile      : standard
+
+[INFO] TransparencyDecorator Enter op=Get-ChildItem corr=cdc51d105e96… elapsedMs=0
+[INFO] TransparencyDecorator Exit  op=Get-ChildItem corr=cdc51d105e96… elapsedMs=47
+[INFO] TransparencyDecorator Enter op=Test-Path     corr=226e2a2495c7… elapsedMs=0
+[INFO] TransparencyDecorator Exit  op=Test-Path     corr=226e2a2495c7… elapsedMs=3
+```
+
+*(Real output from [`samples/session-demo.ps1`](samples/session-demo.ps1), abridged — the `debug`
+profile adds a full tag dump, `minimal` trims to one line per call.)*
+
+Three verbosity profiles switch at runtime. When a script has earned a real module, the same
+command catalog generates one.
+
+**Stack:** PowerShell 7 · .NET 8 · C# · Spectre.Console · xUnit · Docker · GitHub Actions
+
+Under the hood: script analysis through the **real PowerShell AST parser** rather than regular
+expressions; a single canonical JSON command catalog from which the wrappers are generated, guarded
+by a CI check that fails on drift; a decorator pipeline that keeps cross-cutting behaviour out of
+the wrapper logic; golden-file regression fixtures; and ADRs for the boundaries that were expensive
+to reverse.
 
 ## Table of Contents
 
@@ -39,12 +79,25 @@ This module provides a low-friction migration path:
 Prerequisites:
 
 - PowerShell 7+
-- .NET 8 SDK
+- .NET SDK 10 (pinned in `global.json`; the projects themselves target `net8.0`)
+
+Build first — the module loads its host assembly from the `Debug` build output, so importing
+before building fails with *"Host assembly not found"*:
+
+```powershell
+dotnet build Alloyed.DevOps.Multitool.slnx -c Debug
+```
 
 Import module:
 
 ```powershell
 Import-Module ./src/powershell/Alloyed.DevOps.Multitool.psd1 -Force
+```
+
+See the whole thing end to end, including profile switching and teardown:
+
+```powershell
+./samples/session-demo.ps1
 ```
 
 Run a script with decorators in one command:
