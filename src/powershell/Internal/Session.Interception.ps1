@@ -68,11 +68,26 @@ function Set-AlloyedCommandProxyFunction {
     $decoratedInvoker = ${function:Invoke-AlloyedDecoratedCommand}
 
     $proxy = {
+        # Reassign closure-captured variables to genuinely local ones before nesting another
+        # GetNewClosure(): a nested GetNewClosure() only snapshots the local scope, so it would
+        # otherwise silently drop variables that only exist via this scriptblock's own closure.
+        $localNative = $nativeCopy
         if ($isClearHost) {
-            & $decoratedInvoker -Operation $operationCopy -Parameters @{} -Action { & $nativeCopy }
+            $action = { & $localNative }.GetNewClosure()
+            & $decoratedInvoker -Operation $operationCopy -Parameters @{} -Action $action
         } else {
             $capturedInput = @($input)
-            $action = { end { $capturedInput | & $nativeCopy @args } }.GetNewClosure()
+            # Piping an empty array still suppresses the native cmdlet's ProcessRecord (it runs
+            # zero times), so only pipe when there is real pipeline input to forward.
+            $action = {
+                end {
+                    if ($capturedInput.Count -gt 0) {
+                        $capturedInput | & $localNative @args
+                    } else {
+                        & $localNative @args
+                    }
+                }
+            }.GetNewClosure()
             & $decoratedInvoker -Operation $operationCopy -Arguments $args -InputObjects $capturedInput -Action $action
         }
     }.GetNewClosure()

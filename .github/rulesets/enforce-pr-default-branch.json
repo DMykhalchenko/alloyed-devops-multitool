@@ -40,15 +40,11 @@
         "do_not_enforce_on_create": false,
         "required_status_checks": [
           {
-            "context": "gha/pr-policy",
+            "context": "gha/lint",
             "integration_id": 15368
           },
           {
-            "context": "gha/native-build-and-smoke (ubuntu-slim)",
-            "integration_id": 15368
-          },
-          {
-            "context": "gha/native-build-and-smoke (windows-latest)",
+            "context": "gha/build-and-test",
             "integration_id": 15368
           },
           {
