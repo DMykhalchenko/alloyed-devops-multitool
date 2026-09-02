@@ -1,7 +1,6 @@
 # alloyed-devops-multitool
 
 [![Pipeline](https://github.com/DMykhalchenko/alloyed-devops-multitool/actions/workflows/pipeline.yml/badge.svg)](https://github.com/DMykhalchenko/alloyed-devops-multitool/actions/workflows/pipeline.yml)
-[![Version](https://img.shields.io/github/v/release/DMykhalchenko/alloyed-devops-multitool?include_prereleases&label=version&logo=powershell)](https://github.com/DMykhalchenko/alloyed-devops-multitool/releases)
 
 **Add logging, timing, retries and timeouts to legacy PowerShell automation — without editing the scripts.**
 
