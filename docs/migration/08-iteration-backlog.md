@@ -1,5 +1,10 @@
 # Iteration Backlog: alloyed-devops-multitool
 
+> **Historical document — not maintained.** This backlog records what was planned, and its statuses
+> have since drifted from the implementation (see `docs/migration-status-matrix.md`, which notes
+> Milestone 7 still marked "triggered" here although the work is complete). Treat the code, the
+> ADRs and the status matrix as authoritative.
+
 ## Completed Iterations (MVP)
 
 ### Iteration 0 — Scaffold ✓
@@ -65,7 +70,7 @@ Checks:
 
 ### Task 1.2 — Archive TAF repository
 
-Archive `C:\Stash\TAF` on GitHub (Settings → Archive repository).
+Archive the TAF repository on GitHub (Settings → Archive repository).
 
 Checks:
 
@@ -129,7 +134,7 @@ Status: pending Milestone 2.
 
 ### Task 3.1 — Inventory Utility commands
 
-List target commands from TAF `System.Utility` (reference `C:\Stash\TAF` source). Define wrapper naming for each.
+List target commands from TAF `System.Utility`. Define wrapper naming for each.
 
 Checks:
 

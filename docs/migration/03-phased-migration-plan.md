@@ -10,7 +10,7 @@
 
 Deliverables: `01-goal-intake.md`, `02-resource-study.md`, this phased plan.
 
-Verification: documents reviewed for factual consistency against `C:\Stash\TAF` source.
+Verification: documents reviewed for factual consistency against the TAF source.
 
 Status: **complete.**
 
