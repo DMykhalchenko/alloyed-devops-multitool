@@ -234,8 +234,12 @@ MIT. See `LICENSE`.
 
 ## Release Pipeline
 
-A low-frequency integration + publish pipeline is available in `.github/workflows/integration-publish.yml`:
+CI (`.github/workflows/pipeline.yml`) runs lint, build, tests, and a container smoke check on
+every push and pull request. Publishing a preview module to GitHub Packages is a manual step,
+run on demand:
 
-- Weekly scheduled run (`Sunday 03:30 UTC`)
-- Manual trigger (`workflow_dispatch`)
-- Publishes preview module to GitHub Packages only after successful integration tests
+```powershell
+pwsh -NoProfile -File ./tools/publishing/Publish-PreviewModule.ps1 `
+    -ModuleVersion "0.3.0" `
+    -Prerelease "preview$(Get-Date -Format 'yyyyMMdd')"
+```

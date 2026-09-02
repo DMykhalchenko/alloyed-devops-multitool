@@ -41,16 +41,12 @@ Minimum required checks before merge:
 2. Generated artifacts:
 - ports generation check passes (no drift from `ports.catalog.json`).
 
-3. Workflow governance:
-- PR policy checks pass (`pull-request-checks.yml` / branch protection).
-
 ## Branch Protection / Ruleset Mapping
 
 Recommended branch protection for `main`:
 - require pull request before merge,
 - require status checks to pass:
   - `Alloyed DevOps Multitool CI`
-  - `Pull Request Checks`
 - block force-push and deletion for protected branches.
 
 ## Cost-Aware Execution Guidance
