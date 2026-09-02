@@ -2,7 +2,6 @@
 
 [![Pipeline](https://github.com/DMykhalchenko/alloyed-devops-multitool/actions/workflows/pipeline.yml/badge.svg)](https://github.com/DMykhalchenko/alloyed-devops-multitool/actions/workflows/pipeline.yml)
 [![Version](https://img.shields.io/github/v/release/DMykhalchenko/alloyed-devops-multitool?include_prereleases&label=version&logo=powershell)](https://github.com/DMykhalchenko/alloyed-devops-multitool/releases)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **Add logging, timing, retries and timeouts to legacy PowerShell automation — without editing the scripts.**
 
@@ -283,7 +282,9 @@ pwsh -NoProfile -File ./dev.ps1 -Stage smoke
 
 ## License
 
-MIT. See `LICENSE`.
+Copyright (c) 2026 Danylo Mykhalchenko. All rights reserved — the source is published to be read
+and evaluated, not licensed for use. See [`LICENSE`](LICENSE); get in touch if you want to use part
+of it.
 
 ## Release Pipeline
 

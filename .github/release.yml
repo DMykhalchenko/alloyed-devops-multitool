@@ -3,20 +3,19 @@ changelog:
     - title: New Features
       labels:
         - enhancement
-        - feature
     - title: Bug Fixes
       labels:
         - bug
-        - fix
     - title: Documentation
       labels:
-        - documentation
         - docs
-    - title: Maintenance
+    - title: Tests and CI
       labels:
-        - chore
-        - dependencies
-        - refactor
+        - testing
+        - ci-cd
+    - title: Migration
+      labels:
+        - migration
     - title: Other Changes
       labels:
         - "*"
